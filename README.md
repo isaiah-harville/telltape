@@ -54,11 +54,14 @@ Grab the asset for your platform from the [latest release](https://github.com/is
 
 The macOS `.dmg` installs an app into `/Applications` that opens telltape in
 Terminal (a TUI needs a terminal); the signed/notarized build launches without
-Gatekeeper prompts. The raw binaries run straight from a terminal:
+Gatekeeper prompts. Raw binaries are terminal executables, not Finder apps:
 
 ```bash
 chmod +x telltape-linux-x86_64
 ./telltape-linux-x86_64
+
+chmod +x telltape-macos-arm64
+./telltape-macos-arm64
 ```
 
 ### From source

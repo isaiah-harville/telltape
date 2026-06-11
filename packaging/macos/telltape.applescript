@@ -4,8 +4,9 @@
 on run
 	set appPath to POSIX path of (path to me)
 	set binPath to appPath & "Contents/Resources/telltape"
+	set commandText to "cd " & quoted form of appPath & " && " & quoted form of binPath & "; status=$?; if [ $status -ne 0 ]; then printf '\\ntelltape exited with status %s.\\n' $status; printf 'Press Return to close this window.'; read -r reply; fi; exit $status"
 	tell application "Terminal"
 		activate
-		do script quoted form of binPath
+		do script commandText
 	end tell
 end run
