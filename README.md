@@ -3,6 +3,7 @@
 **Live, low-latency financial and world news headlines in your terminal — built for traders who react to news fast.**
 
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/isaiah-harville/telltape?label=release)](https://github.com/isaiah-harville/telltape/releases/latest)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![CI](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml/badge.svg)](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml)
 
