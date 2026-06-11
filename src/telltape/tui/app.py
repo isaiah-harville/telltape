@@ -69,6 +69,9 @@ class TelltapeApp(App[None]):
     #settings-buttons Button, #contact-buttons Button, #quit-buttons Button {
         margin-left: 2;
     }
+    .kb-row { height: 3; margin-top: 0; }
+    .kb-key { width: 3; content-align: right middle; padding-right: 1; color: $text-muted; }
+    .kb-row Select { width: 1fr; }
     """
     TITLE = "telltape"
     SUB_TITLE = "live tape"
@@ -117,14 +120,20 @@ class TelltapeApp(App[None]):
             )
         yield Footer()
 
+    def _effective_key_map(self) -> dict[str, str]:
+        """Return a {source_name: key} map using config bindings or positional fallback."""
+        if self.config.key_bindings:
+            return {name: k for k, name in self.config.key_bindings.items()}
+        return {src.name: str(i + 1) for i, src in enumerate(self.sources) if i < 9}
+
     def _initial_selections(self) -> list[Selection]:
-        """Build the source selections, prefixing the first nine with a digit."""
+        """Build the source selections, prefixing bound sources with their digit."""
+        key_map = self._effective_key_map()
         selections = []
-        for i, src in enumerate(self.sources):
-            prefix = f"{i + 1} " if i < 9 else "  "
-            selections.append(
-                Selection(f"{prefix}{src.name}", src.name, src.default_on)
-            )
+        for src in self.sources:
+            key = key_map.get(src.name)
+            prefix = f"{key} " if key else "  "
+            selections.append(Selection(f"{prefix}{src.name}", src.name, src.default_on))
         return selections
 
     def on_mount(self) -> None:
@@ -180,11 +189,12 @@ class TelltapeApp(App[None]):
 
     def on_key(self, event) -> None:
         if len(event.key) == 1 and event.key in "123456789":
-            index = int(event.key) - 1
-            if index < len(self.sources):
-                self.query_one("#sources", SelectionList).toggle(
-                    self.sources[index].name
-                )
+            bindings = self.config.key_bindings or {
+                str(i + 1): src.name for i, src in enumerate(self.sources) if i < 9
+            }
+            source_name = bindings.get(event.key)
+            if source_name and source_name in self._by_name:
+                self.query_one("#sources", SelectionList).toggle(source_name)
                 event.stop()
 
     # --- headline sink ----------------------------------------------------
@@ -241,6 +251,8 @@ class TelltapeApp(App[None]):
                 alerts=self.alerts.terms,
                 alerts_sound=self.config.alerts_sound,
                 theme=self.config.theme,
+                source_names=[s.name for s in self.sources],
+                key_bindings=dict(self.config.key_bindings),
             ),
             self._apply_settings,
         )
@@ -262,8 +274,23 @@ class TelltapeApp(App[None]):
             self.engine.set_user_agent(self.config.user_agent)
             self.run_worker(self._load_company_table(), name="companies")
 
+        if result["key_bindings"] != self.config.key_bindings:
+            self.config.key_bindings = result["key_bindings"]
+            self._rebuild_source_list()
+
         save_config(self.config)
         self.notify("Settings updated")
+
+    def _rebuild_source_list(self) -> None:
+        """Refresh the source list labels to reflect updated key bindings."""
+        sl = self.query_one("#sources", SelectionList)
+        selected = set(sl.selected)
+        sl.clear_options()
+        for sel in self._initial_selections():
+            sl.add_option(sel)
+        for name in selected:
+            if name in self._by_name:
+                sl.select(name)
 
     def action_confirm_quit(self) -> None:
         def on_result(quit_app: bool | None) -> None:

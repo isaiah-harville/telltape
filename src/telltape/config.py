@@ -8,7 +8,7 @@ block a contact shared across too many clients, so each user supplies their own.
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 
 from .paths import config_file
 from .tomlio import quote
@@ -34,6 +34,7 @@ class Config:
     theme: str = DEFAULT_THEME
     alerts_sound: bool = True
     fuzzy_threshold: float = 88.0
+    key_bindings: dict[str, str] = field(default_factory=dict)
 
     @property
     def user_agent(self) -> str:
@@ -80,7 +81,7 @@ def save_config(config: Config) -> None:
 
 
 def _render_toml(config: Config) -> str:
-    """Render settings as a flat TOML document."""
+    """Render settings as a TOML document."""
     lines = [
         "# telltape settings",
         f"contact_email = {quote(config.contact_email)}",
@@ -88,4 +89,8 @@ def _render_toml(config: Config) -> str:
         f"alerts_sound = {'true' if config.alerts_sound else 'false'}",
         f"fuzzy_threshold = {config.fuzzy_threshold}",
     ]
+    if config.key_bindings:
+        lines.append("\n[key_bindings]")
+        for k in sorted(config.key_bindings):
+            lines.append(f"{k} = {quote(config.key_bindings[k])}")
     return "\n".join(lines) + "\n"

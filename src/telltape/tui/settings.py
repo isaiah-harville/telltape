@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Checkbox, Input, Label, Select
+from textual.widgets import Button, Checkbox, Input, Label, Select, Static
 
 
 class SettingsScreen(ModalScreen[dict | None]):
@@ -28,18 +28,9 @@ class SettingsScreen(ModalScreen[dict | None]):
         alerts: list[str],
         alerts_sound: bool,
         theme: str,
+        source_names: list[str],
+        key_bindings: dict[str, str],
     ) -> None:
-        """Initialize the dialog.
-
-        Args:
-            contact_email: Current contact email.
-            max_age: Current maximum age in seconds, or ``None``.
-            filters: Current watchlist terms.
-            keyword: Current highlight keyword.
-            alerts: Current alert terms.
-            alerts_sound: Whether the terminal bell rings on an alert.
-            theme: Current theme name.
-        """
         super().__init__()
         self._contact_email = contact_email
         self._max_age = max_age
@@ -49,6 +40,8 @@ class SettingsScreen(ModalScreen[dict | None]):
         self._alerts_sound = alerts_sound
         self._theme = theme
         self._original_theme = theme
+        self._source_names = source_names
+        self._key_bindings = key_bindings
 
     def compose(self) -> ComposeResult:
         themes = sorted(self.app.available_themes)
@@ -88,6 +81,18 @@ class SettingsScreen(ModalScreen[dict | None]):
             yield Checkbox(
                 "Play sound on alerts", value=self._alerts_sound, id="alerts_sound"
             )
+            yield Label("Key bindings — assign a source to each number key (blank = unbound)")
+            options = [("(unbound)", "")] + [(n, n) for n in self._source_names]
+            for i in range(1, 10):
+                bound = self._key_bindings.get(str(i), "")
+                with Horizontal(classes="kb-row"):
+                    yield Static(f"{i}", classes="kb-key")
+                    yield Select(
+                        options,
+                        value=bound or "",
+                        id=f"kb_{i}",
+                        allow_blank=False,
+                    )
             with Horizontal(id="settings-buttons"):
                 yield Button("Save", variant="primary", id="save")
                 yield Button("Cancel", id="cancel")
@@ -96,7 +101,8 @@ class SettingsScreen(ModalScreen[dict | None]):
         return "" if self._max_age is None else str(int(self._max_age))
 
     def on_select_changed(self, event: Select.Changed) -> None:
-        # Apply the chosen theme immediately as a live preview.
+        if event.select.id != "theme":
+            return
         if event.value is not Select.BLANK:
             self.app.theme = str(event.value)
 
@@ -120,6 +126,11 @@ class SettingsScreen(ModalScreen[dict | None]):
             for t in self.query_one("#alerts", Input).value.split(",")
             if t.strip()
         ]
+        key_bindings: dict[str, str] = {}
+        for i in range(1, 10):
+            val = self.query_one(f"#kb_{i}", Select).value
+            if val:
+                key_bindings[str(i)] = str(val)
         self.dismiss(
             {
                 "contact_email": self.query_one("#contact", Input).value.strip(),
@@ -129,6 +140,7 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "alerts": alerts,
                 "alerts_sound": self.query_one("#alerts_sound", Checkbox).value,
                 "theme": str(self.query_one("#theme", Select).value),
+                "key_bindings": key_bindings,
             }
         )
 
