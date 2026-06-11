@@ -21,7 +21,7 @@ dependencies = [
 
 [dependency-groups]
 dev = ["ruff", "ty", "pre-commit"]
-build = ["nuitka>=2.0"]
+build = ["nuitka[onefile]>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/isaiah-harville/telltape"
