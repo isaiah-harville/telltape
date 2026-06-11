@@ -81,7 +81,9 @@ class SettingsScreen(ModalScreen[dict | None]):
             yield Checkbox(
                 "Play sound on alerts", value=self._alerts_sound, id="alerts_sound"
             )
-            yield Label("Key bindings — assign a source to each number key (blank = unbound)")
+            yield Label(
+                "Key bindings — assign a source to each number key (blank = unbound)"
+            )
             options = [("(unbound)", "")] + [(n, n) for n in self._source_names]
             for i in range(1, 10):
                 bound = self._key_bindings.get(str(i), "")

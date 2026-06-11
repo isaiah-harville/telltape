@@ -1,11 +1,15 @@
 [project]
 name = "telltape"
 version = "0.1.0"
-description = "Market-moving headlines in real time."
+description = "Market-moving financial and world news headlines in your terminal."
 authors = [
-    { name = "isaiah-harville", email = "isaiah@harville.dev" }
+    { name = "Isaiah Harville", email = "isaiah@harville.dev" }
 ]
+readme = "README.md"
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+keywords = ["news", "finance", "trading", "tui", "terminal", "rss", "sec", "edgar"]
 dependencies = [
     "click>=8.4.1",
     "feedparser>=6.0.12",
@@ -16,8 +20,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff", "ty"]
+dev = ["ruff", "ty", "pre-commit"]
 build = ["nuitka>=2.0"]
+
+[project.urls]
+Homepage = "https://github.com/isaiah-harville/telltape"
+Repository = "https://github.com/isaiah-harville/telltape"
 
 [project.scripts]
 telltape = "telltape:main"

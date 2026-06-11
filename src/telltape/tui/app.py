@@ -133,7 +133,9 @@ class TelltapeApp(App[None]):
         for src in self.sources:
             key = key_map.get(src.name)
             prefix = f"{key} " if key else "  "
-            selections.append(Selection(f"{prefix}{src.name}", src.name, src.default_on))
+            selections.append(
+                Selection(f"{prefix}{src.name}", src.name, src.default_on)
+            )
         return selections
 
     def on_mount(self) -> None:
@@ -166,6 +168,8 @@ class TelltapeApp(App[None]):
             table = await asyncio.to_thread(
                 CompanyTable.load, user_agent=self.config.user_agent
             )
+        except asyncio.CancelledError:
+            raise
         except Exception:
             self.notify(
                 "Company list unavailable; check the contact email in Settings.",

@@ -59,6 +59,7 @@ class Deduper:
             )
             if match is not None:
                 self._remember(normalized_title)
+                self._recent.append(normalized_title)
                 return False
         self._remember(normalized_title)
         self._recent.append(normalized_title)

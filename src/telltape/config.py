@@ -8,7 +8,7 @@ block a contact shared across too many clients, so each user supplies their own.
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 
 from .paths import config_file
 from .tomlio import quote
@@ -65,8 +65,20 @@ def load_config() -> tuple[Config, str | None]:
         data = tomllib.loads(path.read_text())
     except (OSError, tomllib.TOMLDecodeError):
         return Config(), f"Could not load settings from {path}; using defaults."
-    known = {f.name for f in fields(Config)}
-    return Config(**{k: v for k, v in data.items() if k in known}), None
+    config = Config()
+    if isinstance(data.get("contact_email"), str):
+        config.contact_email = data["contact_email"]
+    if isinstance(data.get("theme"), str):
+        config.theme = data["theme"]
+    if isinstance(data.get("alerts_sound"), bool):
+        config.alerts_sound = data["alerts_sound"]
+    if isinstance(data.get("fuzzy_threshold"), int | float):
+        config.fuzzy_threshold = float(data["fuzzy_threshold"])
+    if isinstance(data.get("key_bindings"), dict):
+        config.key_bindings = {
+            str(k): v for k, v in data["key_bindings"].items() if isinstance(v, str)
+        }
+    return config, None
 
 
 def save_config(config: Config) -> None:

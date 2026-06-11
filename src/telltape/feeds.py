@@ -119,7 +119,9 @@ def load_feeds(path: Path | None = None) -> tuple[list[FeedSource], str | None]:
             DEFAULT_FEEDS
         ), f"Could not load feeds from {target}; using defaults."
     feeds = _parse(data)
-    return (feeds or list(DEFAULT_FEEDS)), None
+    if not feeds:
+        return list(DEFAULT_FEEDS), f"No valid feeds found in {target}; using defaults."
+    return feeds, None
 
 
 def write_default_feeds(path: Path) -> None:
