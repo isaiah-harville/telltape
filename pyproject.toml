@@ -1,0 +1,23 @@
+[project]
+name = "telltape"
+version = "0.1.0"
+description = "Market-moving headlines in real time."
+authors = [
+    { name = "isaiah-harville", email = "isaiah@harville.dev" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.4.1",
+    "feedparser>=6.0.12",
+    "httpx>=0.28.1",
+    "rapidfuzz>=3.14.5",
+    "rich>=15.0.0",
+    "textual>=8.2.7",
+]
+
+[project.scripts]
+telltape = "telltape:main"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12.0"]
+build-backend = "uv_build"
