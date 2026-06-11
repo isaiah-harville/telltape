@@ -1,0 +1,65 @@
+name: release-windows
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      NUITKA_CACHE_DIR: ${{ github.workspace }}/.cache/nuitka
+      CLCACHE_DIR: ${{ github.workspace }}/.cache/clcache
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Prepare release build cache
+        shell: bash
+        run: mkdir -p "$NUITKA_CACHE_DIR" "$CLCACHE_DIR"
+
+      - name: Restore release build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nuitka
+            .cache/clcache
+          key: release-windows-x86_64-${{ hashFiles('uv.lock', 'pyproject.toml', 'packaging/**', 'src/**/*.py') }}
+          restore-keys: |
+            release-windows-x86_64-
+
+      - run: uv sync --frozen --group build
+
+      - name: Build binary
+        shell: bash
+        run: |
+          uv run python -m nuitka \
+            --onefile \
+            --assume-yes-for-downloads \
+            --output-dir=dist \
+            --output-filename=telltape \
+            --include-package=telltape \
+            --include-package=textual \
+            --include-package=feedparser \
+            --include-package=rapidfuzz \
+            --include-package-data=textual \
+            --include-package-data=certifi \
+            --include-distribution-metadata=telltape \
+            packaging/entry.py
+
+      - name: Stage asset
+        shell: bash
+        run: |
+          mkdir -p out
+          cp dist/telltape.exe out/telltape-windows-x86_64.exe
+
+      - name: Upload release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows-x86_64
+          path: out/*
+          if-no-files-found: error

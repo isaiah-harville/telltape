@@ -1,6 +1,6 @@
 name: release
 
-# Tags only — never runs on branch pushes.
+# Tags only - never runs on branch pushes.
 on:
   push:
     tags: ["v*"]
@@ -9,205 +9,29 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux-x86_64
-          - os: ubuntu-24.04-arm
-            target: linux-arm64
-          - os: windows-latest
-            target: windows-x86_64
-          - os: macos-latest
-            target: macos-arm64
-    runs-on: ${{ matrix.os }}
-    env:
-      NUITKA_CACHE_DIR: ${{ github.workspace }}/.cache/nuitka
-      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
-      CLCACHE_DIR: ${{ github.workspace }}/.cache/clcache
-      CCACHE_COMPILERCHECK: content
+  linux:
+    name: Linux binaries
+    uses: ./.github/workflows/release-linux.yml
+
+  windows:
+    name: Windows binary
+    uses: ./.github/workflows/release-windows.yml
+
+  macos:
+    name: macOS app and binaries
+    uses: ./.github/workflows/release-macos.yml
+    secrets: inherit
+
+  publish:
+    name: Publish release assets
+    runs-on: ubuntu-latest
+    needs: [linux, windows, macos]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - name: Download release assets
+        uses: actions/download-artifact@v4
         with:
-          python-version: "3.12"
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Prepare release build cache
-        shell: bash
-        run: mkdir -p "$NUITKA_CACHE_DIR" "$CCACHE_DIR" "$CLCACHE_DIR"
-
-      - name: Restore release build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache/nuitka
-            .cache/ccache
-            .cache/clcache
-          key: release-${{ matrix.target }}-${{ hashFiles('uv.lock', 'pyproject.toml', 'packaging/**', 'src/**/*.py') }}
-          restore-keys: |
-            release-${{ matrix.target }}-
-
-      - run: uv sync --frozen --group build
-
-      - name: Install build deps (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y patchelf ccache
-
-      - name: Install build deps (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ccache create-dmg
-
-      - name: Build binary (Nuitka)
-        shell: bash
-        run: |
-          uv run python -m nuitka \
-            --onefile \
-            --assume-yes-for-downloads \
-            --output-dir=dist \
-            --output-filename=telltape \
-            --include-package=telltape \
-            --include-package=textual \
-            --include-package=feedparser \
-            --include-package=rapidfuzz \
-            --include-package-data=textual \
-            --include-package-data=certifi \
-            --include-distribution-metadata=telltape \
-            packaging/entry.py
-
-      - name: Stage assets (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p out
-          cp dist/telltape out/telltape-${{ matrix.target }}
-
-      - name: Stage assets (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          mkdir -p out
-          cp dist/telltape.exe out/telltape-windows-x86_64.exe
-
-      - name: Build .app (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          # AppleScript applet: a real Mach-O bundle that opens Terminal running
-          # the binary embedded in Contents/Resources.
-          osacompile -o dist/telltape.app packaging/macos/telltape.applescript
-          cp dist/telltape dist/telltape.app/Contents/Resources/telltape
-          chmod +x dist/telltape.app/Contents/Resources/telltape
-          plist=dist/telltape.app/Contents/Info.plist
-          set_key() {
-            /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$plist" 2>/dev/null \
-              || /usr/libexec/PlistBuddy -c "Set :$1 $2" "$plist"
-          }
-          set_key CFBundleName telltape
-          set_key CFBundleDisplayName telltape
-          set_key CFBundleIdentifier dev.harville.telltape
-          set_key CFBundleShortVersionString "$version"
-          set_key CFBundleVersion "$version"
-          mkdir -p out
-          cp dist/telltape out/telltape-macos-arm64
-
-      - name: Sign & notarize (macOS)
-        id: signmac
-        if: runner.os == 'macOS'
-        env:
-          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
-          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
-          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
-          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-        run: |
-          set -euo pipefail
-          if [ -z "${CERT_P12}" ]; then
-            echo "MACOS_CERT_P12 not set; ad-hoc signing (unnotarized)."
-            codesign --force --deep --sign - dist/telltape.app
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Import the Developer ID cert into a throwaway keychain that persists
-          # for the later DMG-signing step in this job.
-          kc=build.keychain
-          kc_pw="$(openssl rand -base64 24)"
-          security create-keychain -p "$kc_pw" "$kc"
-          security set-keychain-settings -lut 21600 "$kc"
-          security unlock-keychain -p "$kc_pw" "$kc"
-          echo "$CERT_P12" | base64 --decode > cert.p12
-          security import cert.p12 -k "$kc" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          security list-keychains -d user -s "$kc" login.keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$kc_pw" "$kc"
-          rm -f cert.p12
-
-          sign() {
-            codesign --force --options runtime --timestamp \
-              --entitlements packaging/macos/entitlements.plist \
-              --sign "$SIGN_IDENTITY" "$1"
-          }
-          # Sign inner binary first, then the bundle, then the standalone binary.
-          sign dist/telltape.app/Contents/Resources/telltape
-          codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" dist/telltape.app
-          sign out/telltape-macos-arm64
-
-          # Notarize with the App Store Connect API key. The .app is stapled; a
-          # bare binary cannot be stapled but the notarization is still recorded.
-          echo "$NOTARY_KEY" | base64 --decode > notary.p8
-          notarize() {
-            xcrun notarytool submit "$1" --key notary.p8 \
-              --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
-          }
-          ditto -c -k --keepParent dist/telltape.app app-notarize.zip
-          notarize app-notarize.zip
-          xcrun stapler staple dist/telltape.app
-          ditto -c -k out/telltape-macos-arm64 bin-notarize.zip
-          notarize bin-notarize.zip
-
-          echo "signed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Build DMG installer (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          mkdir -p dmg-src
-          cp -R dist/telltape.app dmg-src/
-          create-dmg \
-            --volname "telltape ${version}" \
-            --window-pos 200 120 --window-size 600 360 --icon-size 100 \
-            --icon "telltape.app" 160 185 --app-drop-link 440 185 \
-            --no-internet-enable \
-            "out/telltape-macos-arm64.dmg" "dmg-src" || true
-          if [ ! -f out/telltape-macos-arm64.dmg ]; then
-            # Headless Finder styling can fail; fall back to a plain DMG that
-            # still has the drag-to-Applications target.
-            rm -rf dmg-plain && mkdir dmg-plain
-            cp -R dist/telltape.app dmg-plain/
-            ln -s /Applications dmg-plain/Applications
-            hdiutil create -volname "telltape ${version}" -srcfolder dmg-plain \
-              -ov -format UDZO out/telltape-macos-arm64.dmg
-          fi
-
-      - name: Sign & notarize DMG (macOS)
-        if: runner.os == 'macOS' && steps.signmac.outputs.signed == 'true'
-        env:
-          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
-          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-        run: |
-          set -euo pipefail
-          dmg=out/telltape-macos-arm64.dmg
-          codesign --force --timestamp --sign "$SIGN_IDENTITY" "$dmg"
-          xcrun notarytool submit "$dmg" --key notary.p8 \
-            --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
-          xcrun stapler staple "$dmg"
-          rm -f notary.p8
+          path: out
+          merge-multiple: true
 
       - name: Publish to release
         uses: softprops/action-gh-release@v2
