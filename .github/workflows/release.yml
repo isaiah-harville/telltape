@@ -23,16 +23,43 @@ jobs:
           - os: macos-latest
             target: macos-arm64
     runs-on: ${{ matrix.os }}
+    env:
+      NUITKA_CACHE_DIR: ${{ github.workspace }}/.cache/nuitka
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
+      CLCACHE_DIR: ${{ github.workspace }}/.cache/clcache
+      CCACHE_COMPILERCHECK: content
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Prepare release build cache
+        shell: bash
+        run: mkdir -p "$NUITKA_CACHE_DIR" "$CCACHE_DIR" "$CLCACHE_DIR"
+
+      - name: Restore release build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nuitka
+            .cache/ccache
+            .cache/clcache
+          key: release-${{ matrix.target }}-${{ hashFiles('uv.lock', 'pyproject.toml', 'packaging/**', 'src/**/*.py') }}
+          restore-keys: |
+            release-${{ matrix.target }}-
+
       - run: uv sync --frozen --group build
 
       - name: Install build deps (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y patchelf
+        run: sudo apt-get update && sudo apt-get install -y patchelf ccache
+
+      - name: Install build deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache create-dmg
 
       - name: Build binary (Nuitka)
         shell: bash
@@ -149,7 +176,6 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          brew install create-dmg >/dev/null
           mkdir -p dmg-src
           cp -R dist/telltape.app dmg-src/
           create-dmg \
