@@ -25,22 +25,6 @@ Implementation notes:
 - Cost control: cap concurrent calls, dedup before calling, and make any
   always-on scoring opt-in.
 
-## macOS packaging (options, decision deferred)
-
-telltape is a terminal UI, which shapes the choices:
-
-- **Homebrew / pipx CLI.** `brew install` or `pipx install telltape`. Simplest
-  and most idiomatic for a TUI; no code signing. Not a clickable `.app`.
-- **Briefcase (BeeWare) `.app`.** Produces a signed, notarizable app bundle that
-  can launch the TUI in its own window. Closest to an "official app"; heavier
-  toolchain and a code-signing certificate are required for distribution.
-- **PyInstaller + `.app` wrapper.** A one-file binary wrapped in a minimal
-  bundle that opens a terminal and runs it. Clickable, but the terminal-launcher
-  approach is less clean.
-
-Recommendation: ship the CLI via Homebrew/pipx first, then add a Briefcase
-bundle once distribution (signing, notarization, updates) is worth the setup.
-
 ## Deferred data sources
 
 - **SearXNG search** as a secondary "broader chatter" lookup (not the live tape;

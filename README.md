@@ -9,7 +9,29 @@ Seeking Alpha, and press-release wires), general world news that moves markets
 concurrently and with conditional GET — then shows deduped headlines with their
 publication age so you can see how fresh each item is.
 
+## Install
+
+Each `v*` tag builds these assets via [release.yml](.github/workflows/release.yml):
+
+| Platform | Asset |
+| --- | --- |
+| macOS (Apple Silicon) | `telltape-macos-arm64.dmg` (drag-to-Applications installer) or `telltape-macos-arm64` (raw binary) |
+| Linux (x86_64) | `telltape-linux-x86_64` |
+| Linux (arm64) | `telltape-linux-arm64` |
+| Windows (x86_64) | `telltape-windows-x86_64.exe` |
+
+The raw binaries run from a terminal — `chmod +x telltape-macos-arm64 && ./telltape-macos-arm64`.
+The macOS `.dmg` installs an app into `/Applications`; because a TUI needs a
+terminal, the app opens Terminal.app running telltape. With the Apple Developer
+ID secrets configured the app and DMG are signed and notarized, so they launch
+without Gatekeeper warnings.
+
+The binaries are compiled with [Nuitka](https://nuitka.net) (Python → C → native
+machine code), so the shipped executable contains no recoverable Python source.
+
 ## Run
+
+From source:
 
 ```bash
 uv run telltape
@@ -21,7 +43,8 @@ you are not asked again.
 In the app:
 
 - **Sources** (left): click a source or press its number key (1-9) to toggle it.
-  `a` enables all, `x` disables all.
+  Assign which source each number key controls in **Settings**; by default they
+  map to the first nine sources in order. `a` enables all, `x` disables all.
 - **Settings** (`s`): set your contact email, the theme, an age filter, a
   watchlist, and a highlight keyword. The theme previews live as you pick it.
 - `t` pauses the tape, `c` clears it, `q` quits.

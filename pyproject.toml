@@ -17,6 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = ["ruff", "ty"]
+build = ["nuitka>=2.0"]
 
 [project.scripts]
 telltape = "telltape:main"
