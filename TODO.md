@@ -1,13 +1,4 @@
-# telltape — roadmap
-
-A terminal that streams live, low-latency financial and world news for traders
-who act on news fast. RSS/Atom plus SEC EDGAR is the free backbone; the latency
-win comes from concurrent async polling with conditional GET, not the language.
-
-## Status
-- [x] TOML config file for feeds (seeded from defaults on first run, editable)
-- [ ] Persistence (SQLite) for history and review
-- [ ] Tests: poller conditional-GET, dedup eviction/fuzzy, company resolve
+# TODO
 
 ## LLM integration (design options)
 
