@@ -17,13 +17,14 @@ from textual.widgets import Footer, Header, RichLog, SelectionList
 from textual.widgets.selection_list import Selection
 
 from ..companies import CompanyTable
-from ..config import Config, load_config, save_config
+from ..config import load_config, save_config
 from ..engine import NewsEngine
 from ..feeds import load_feeds
 from ..models import FeedSource, Headline
 from ..render import format_headline
 from ..watchlist import Watchlist
 from .contact import ContactScreen
+from .quit import QuitScreen
 from .settings import SettingsScreen
 
 
@@ -48,31 +49,36 @@ class TelltapeApp(App[None]):
     #sources { width: 38; border: round $accent; padding: 0 1; }
     #tape { border: round $accent; padding: 0 1; }
 
-    SettingsScreen, ContactScreen { align: center middle; }
-    #settings-box, #contact-box {
+    SettingsScreen, ContactScreen, QuitScreen { align: center middle; }
+    #settings-box, #contact-box, #quit-box {
         width: 72; max-width: 95%; height: auto; max-height: 95%;
         overflow-y: auto; padding: 1 2;
         border: thick $accent; background: $surface;
     }
-    #settings-title, #contact-title {
+    #quit-box { width: 48; }
+    #settings-title, #contact-title, #quit-title {
         text-style: bold; width: 1fr; text-align: center;
     }
-    #settings-box Label, #contact-box Label { margin-top: 1; color: $text-muted; }
+    #settings-box Label, #contact-box Label, #quit-box Label {
+        margin-top: 1; color: $text-muted;
+    }
     #contact-error { color: $error; }
-    #settings-buttons, #contact-buttons {
+    #settings-buttons, #contact-buttons, #quit-buttons {
         height: auto; margin-top: 1; align-horizontal: right;
     }
-    #settings-buttons Button, #contact-buttons Button { margin-left: 2; }
+    #settings-buttons Button, #contact-buttons Button, #quit-buttons Button {
+        margin-left: 2;
+    }
     """
     TITLE = "telltape"
     SUB_TITLE = "live tape"
     BINDINGS = [
         ("s", "settings", "Settings"),
-        ("p", "toggle_pause", "Pause"),
+        ("t", "toggle_pause", "Pause"),
         ("c", "clear_tape", "Clear"),
         ("a", "all_sources", "All on"),
         ("x", "no_sources", "All off"),
-        ("q", "quit", "Quit"),
+        ("q", "confirm_quit", "Quit"),
     ]
 
     def __init__(self, sources: list[FeedSource] | None = None) -> None:
@@ -106,7 +112,9 @@ class TelltapeApp(App[None]):
         yield Header(show_clock=True)
         with Horizontal(id="body"):
             yield SelectionList(*self._initial_selections(), id="sources")
-            yield TapeLog(id="tape", wrap=True, markup=False, highlight=False, max_lines=2000)
+            yield TapeLog(
+                id="tape", wrap=True, markup=False, highlight=False, max_lines=2000
+            )
         yield Footer()
 
     def _initial_selections(self) -> list[Selection]:
@@ -114,12 +122,16 @@ class TelltapeApp(App[None]):
         selections = []
         for i, src in enumerate(self.sources):
             prefix = f"{i + 1} " if i < 9 else "  "
-            selections.append(Selection(f"{prefix}{src.name}", src.name, src.default_on))
+            selections.append(
+                Selection(f"{prefix}{src.name}", src.name, src.default_on)
+            )
         return selections
 
     def on_mount(self) -> None:
         self.theme = self.config.theme
-        self.query_one("#sources", SelectionList).border_title = "Sources  (click / 1-9)"
+        self.query_one(
+            "#sources", SelectionList
+        ).border_title = "Sources  (click / 1-9)"
         self._tape = self.query_one("#tape", RichLog)
         self._tape.border_title = "Live tape"
         for message in self._load_errors:
@@ -170,7 +182,9 @@ class TelltapeApp(App[None]):
         if len(event.key) == 1 and event.key in "123456789":
             index = int(event.key) - 1
             if index < len(self.sources):
-                self.query_one("#sources", SelectionList).toggle(self.sources[index].name)
+                self.query_one("#sources", SelectionList).toggle(
+                    self.sources[index].name
+                )
                 event.stop()
 
     # --- headline sink ----------------------------------------------------
@@ -207,9 +221,15 @@ class TelltapeApp(App[None]):
             "Pause or resume the live tape",
             self.action_toggle_pause,
         )
-        yield SystemCommand("Clear tape", "Remove all headlines from the tape", self.action_clear_tape)
-        yield SystemCommand("Enable all sources", "Turn on every source", self.action_all_sources)
-        yield SystemCommand("Disable all sources", "Turn off every source", self.action_no_sources)
+        yield SystemCommand(
+            "Clear tape", "Remove all headlines from the tape", self.action_clear_tape
+        )
+        yield SystemCommand(
+            "Enable all sources", "Turn on every source", self.action_all_sources
+        )
+        yield SystemCommand(
+            "Disable all sources", "Turn off every source", self.action_no_sources
+        )
 
     def action_settings(self) -> None:
         self.push_screen(
@@ -244,6 +264,13 @@ class TelltapeApp(App[None]):
 
         save_config(self.config)
         self.notify("Settings updated")
+
+    def action_confirm_quit(self) -> None:
+        def on_result(quit_app: bool | None) -> None:
+            if quit_app:
+                self.exit()
+
+        self.push_screen(QuitScreen(), on_result)
 
     def action_toggle_pause(self) -> None:
         self.paused = not self.paused

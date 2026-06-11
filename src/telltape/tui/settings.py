@@ -54,8 +54,12 @@ class SettingsScreen(ModalScreen[dict | None]):
         themes = sorted(self.app.available_themes)
         with Vertical(id="settings-box"):
             yield Label("Settings", id="settings-title")
-            yield Label("Contact email — sent to data providers; required for SEC feeds")
-            yield Input(value=self._contact_email, id="contact", placeholder="you@example.com")
+            yield Label(
+                "Contact email — sent to data providers; required for SEC feeds"
+            )
+            yield Input(
+                value=self._contact_email, id="contact", placeholder="you@example.com"
+            )
             yield Label("Theme")
             yield Select(
                 [(name, name) for name in themes],
@@ -65,13 +69,25 @@ class SettingsScreen(ModalScreen[dict | None]):
             )
             yield Label("Max age — hide items older than N seconds (blank = no limit)")
             yield Input(value=self._fmt_age(), id="max_age", placeholder="e.g. 600")
-            yield Label("Watchlist — tickers or company names, comma separated (blank = all)")
-            yield Input(value=", ".join(self._filters), id="filters", placeholder="AAPL, Tesla, oil")
+            yield Label(
+                "Watchlist — tickers or company names, comma separated (blank = all)"
+            )
+            yield Input(
+                value=", ".join(self._filters),
+                id="filters",
+                placeholder="AAPL, Tesla, oil",
+            )
             yield Label("Highlight keyword")
             yield Input(value=self._keyword, id="keyword", placeholder="e.g. war")
             yield Label("Alerts — notify on these tickers or keywords, comma separated")
-            yield Input(value=", ".join(self._alerts), id="alerts", placeholder="AAPL, recall, bankruptcy")
-            yield Checkbox("Play sound on alerts", value=self._alerts_sound, id="alerts_sound")
+            yield Input(
+                value=", ".join(self._alerts),
+                id="alerts",
+                placeholder="AAPL, recall, bankruptcy",
+            )
+            yield Checkbox(
+                "Play sound on alerts", value=self._alerts_sound, id="alerts_sound"
+            )
             with Horizontal(id="settings-buttons"):
                 yield Button("Save", variant="primary", id="save")
                 yield Button("Cancel", id="cancel")
@@ -94,8 +110,16 @@ class SettingsScreen(ModalScreen[dict | None]):
             max_age = float(raw_age) if raw_age else None
         except ValueError:
             max_age = None
-        filters = [t.strip() for t in self.query_one("#filters", Input).value.split(",") if t.strip()]
-        alerts = [t.strip() for t in self.query_one("#alerts", Input).value.split(",") if t.strip()]
+        filters = [
+            t.strip()
+            for t in self.query_one("#filters", Input).value.split(",")
+            if t.strip()
+        ]
+        alerts = [
+            t.strip()
+            for t in self.query_one("#alerts", Input).value.split(",")
+            if t.strip()
+        ]
         self.dismiss(
             {
                 "contact_email": self.query_one("#contact", Input).value.strip(),

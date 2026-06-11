@@ -26,33 +26,65 @@ _EDGAR_BASE = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&owner=
 
 DEFAULT_FEEDS: list[FeedSource] = [
     # ---- Financial wires (fast, structured) -----------------------------
-    FeedSource("CNBC Top News", "https://www.cnbc.com/id/100003114/device/rss/rss.html"),
+    FeedSource(
+        "CNBC Top News", "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+    ),
     FeedSource("CNBC Markets", "https://www.cnbc.com/id/20910258/device/rss/rss.html"),
-    FeedSource("MarketWatch Top", "http://feeds.marketwatch.com/marketwatch/topstories/"),
-    FeedSource("MarketWatch RealTime", "http://feeds.marketwatch.com/marketwatch/realtimeheadlines/", interval=10.0),
+    FeedSource(
+        "MarketWatch Top", "http://feeds.marketwatch.com/marketwatch/topstories/"
+    ),
+    FeedSource(
+        "MarketWatch RealTime",
+        "http://feeds.marketwatch.com/marketwatch/realtimeheadlines/",
+        interval=10.0,
+    ),
     FeedSource("Yahoo Finance", "https://finance.yahoo.com/news/rssindex"),
     FeedSource("Investing.com", "https://www.investing.com/rss/news.rss"),
     FeedSource("Seeking Alpha", "https://seekingalpha.com/feed.xml"),
     # Press-release wires — companies breaking their own news (high volume).
-    FeedSource("PR Newswire", "https://www.prnewswire.com/rss/news-releases-list.rss", default_on=False),
+    FeedSource(
+        "PR Newswire",
+        "https://www.prnewswire.com/rss/news-releases-list.rss",
+        default_on=False,
+    ),
     FeedSource(
         "GlobeNewswire",
         "https://www.globenewswire.com/RssFeed/orgclass/1/feedTitle/GlobeNewswire%20-%20News%20Room",
         default_on=False,
     ),
-
     # ---- World / general news that moves markets ------------------------
-    FeedSource("BBC World", "https://feeds.bbci.co.uk/news/world/rss.xml", category=WORLD),
-    FeedSource("BBC Business", "https://feeds.bbci.co.uk/news/business/rss.xml", category=WORLD),
-    FeedSource("Al Jazeera", "https://www.aljazeera.com/xml/rss/all.xml", category=WORLD),
-    FeedSource("Guardian World", "https://www.theguardian.com/world/rss", category=WORLD),
-    FeedSource("NYT World", "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", category=WORLD),
-    FeedSource("NYT Business", "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", category=WORLD),
+    FeedSource(
+        "BBC World", "https://feeds.bbci.co.uk/news/world/rss.xml", category=WORLD
+    ),
+    FeedSource(
+        "BBC Business", "https://feeds.bbci.co.uk/news/business/rss.xml", category=WORLD
+    ),
+    FeedSource(
+        "Al Jazeera", "https://www.aljazeera.com/xml/rss/all.xml", category=WORLD
+    ),
+    FeedSource(
+        "Guardian World", "https://www.theguardian.com/world/rss", category=WORLD
+    ),
+    FeedSource(
+        "NYT World",
+        "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        category=WORLD,
+    ),
+    FeedSource(
+        "NYT Business",
+        "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+        category=WORLD,
+    ),
     FeedSource("NPR News", "https://feeds.npr.org/1001/rss.xml", category=WORLD),
-
     # ---- SEC EDGAR real-time filings ------------------------------------
     FeedSource("EDGAR 8-K", f"{_EDGAR_BASE}&type=8-K", category=FILING, interval=20.0),
-    FeedSource("EDGAR All", f"{_EDGAR_BASE}&type=", category=FILING, interval=30.0, default_on=False),
+    FeedSource(
+        "EDGAR All",
+        f"{_EDGAR_BASE}&type=",
+        category=FILING,
+        interval=30.0,
+        default_on=False,
+    ),
 ]
 
 # Recognized categories, used to validate values read from the config file.
@@ -83,7 +115,9 @@ def load_feeds(path: Path | None = None) -> tuple[list[FeedSource], str | None]:
     try:
         data = tomllib.loads(target.read_text())
     except (OSError, tomllib.TOMLDecodeError):
-        return list(DEFAULT_FEEDS), f"Could not load feeds from {target}; using defaults."
+        return list(
+            DEFAULT_FEEDS
+        ), f"Could not load feeds from {target}; using defaults."
     feeds = _parse(data)
     return (feeds or list(DEFAULT_FEEDS)), None
 
@@ -145,7 +179,9 @@ def _render_toml(feeds: list[FeedSource]) -> str:
         lines.append(f"interval = {feed.interval}")
         lines.append(f"default_on = {'true' if feed.default_on else 'false'}")
         if feed.headers:
-            inner = ", ".join(f"{quote(k)} = {quote(v)}" for k, v in feed.headers.items())
+            inner = ", ".join(
+                f"{quote(k)} = {quote(v)}" for k, v in feed.headers.items()
+            )
             lines.append(f"headers = {{ {inner} }}")
         lines.append("")
     return "\n".join(lines)

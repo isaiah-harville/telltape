@@ -24,7 +24,7 @@ In the app:
   `a` enables all, `x` disables all.
 - **Settings** (`s`): set your contact email, the theme, an age filter, a
   watchlist, and a highlight keyword. The theme previews live as you pick it.
-- `p` pauses the tape, `c` clears it, `q` quits.
+- `t` pauses the tape, `c` clears it, `q` quits.
 
 ## Contact email
 

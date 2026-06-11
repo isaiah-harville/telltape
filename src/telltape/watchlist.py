@@ -68,7 +68,9 @@ class Watchlist:
             if kind == "ticker":
                 if value in held:
                     return True
-                if self._table is not None and self._table.mentions(headline.title, value):
+                if self._table is not None and self._table.mentions(
+                    headline.title, value
+                ):
                     return True
             elif value in headline.title.lower():
                 return True

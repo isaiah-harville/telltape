@@ -26,7 +26,9 @@ def _age_str(headline: Headline) -> str:
     return f"{age / 3600:4.0f}h "
 
 
-def format_headline(headline: Headline, *, keyword: str = "", alert: bool = False) -> Text:
+def format_headline(
+    headline: Headline, *, keyword: str = "", alert: bool = False
+) -> Text:
     """Render a headline as a single styled line.
 
     Args:
@@ -50,7 +52,9 @@ def format_headline(headline: Headline, *, keyword: str = "", alert: bool = Fals
     if keyword:
         line.highlight_words([keyword], "black on yellow", case_sensitive=False)
     if headline.tickers:
-        line.append("  " + " ".join(f"${t}" for t in headline.tickers), style="bold green")
+        line.append(
+            "  " + " ".join(f"${t}" for t in headline.tickers), style="bold green"
+        )
     # Carry the source URL on the whole line so a double-click can open it. The
     # meta merges onto the existing styles without disturbing colors.
     if headline.url:

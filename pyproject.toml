@@ -15,6 +15,9 @@ dependencies = [
     "textual>=8.2.7",
 ]
 
+[dependency-groups]
+dev = ["ruff", "ty"]
+
 [project.scripts]
 telltape = "telltape:main"
 
