@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 
+from textual import events
 from textual.app import App, ComposeResult, SystemCommand
 from textual.containers import Horizontal
 from textual.screen import Screen
@@ -24,6 +25,19 @@ from ..render import format_headline
 from ..watchlist import Watchlist
 from .contact import ContactScreen
 from .settings import SettingsScreen
+
+
+class TapeLog(RichLog):
+    """A RichLog whose lines open their source URL on double-click."""
+
+    def on_click(self, event: events.Click) -> None:
+        # ``chain`` is the number of rapid successive clicks; 2 is a double-click.
+        if event.chain != 2:
+            return
+        url = event.style.meta.get("url")
+        if url:
+            self.app.open_url(url)
+            event.stop()
 
 
 class TelltapeApp(App[None]):
@@ -92,7 +106,7 @@ class TelltapeApp(App[None]):
         yield Header(show_clock=True)
         with Horizontal(id="body"):
             yield SelectionList(*self._initial_selections(), id="sources")
-            yield RichLog(id="tape", wrap=True, markup=False, highlight=False, max_lines=2000)
+            yield TapeLog(id="tape", wrap=True, markup=False, highlight=False, max_lines=2000)
         yield Footer()
 
     def _initial_selections(self) -> list[Selection]:

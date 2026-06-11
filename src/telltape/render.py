@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from rich.style import Style
 from rich.text import Text
 
 from .models import FILING, WORLD, Headline
@@ -50,4 +51,8 @@ def format_headline(headline: Headline, *, keyword: str = "", alert: bool = Fals
         line.highlight_words([keyword], "black on yellow", case_sensitive=False)
     if headline.tickers:
         line.append("  " + " ".join(f"${t}" for t in headline.tickers), style="bold green")
+    # Carry the source URL on the whole line so a double-click can open it. The
+    # meta merges onto the existing styles without disturbing colors.
+    if headline.url:
+        line.stylize(Style(meta={"url": headline.url}))
     return line
