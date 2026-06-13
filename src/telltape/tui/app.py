@@ -136,6 +136,8 @@ class TelltapeApp(App[None]):
             dedup_threshold=self.config.fuzzy_threshold,
         )
         self._tape: RichLog | None = None
+        # Guards against persisting the source selection during initial mount.
+        self._sources_ready = False
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -152,6 +154,16 @@ class TelltapeApp(App[None]):
             return {name: k for k, name in self.config.key_bindings.items()}
         return {src.name: str(i + 1) for i, src in enumerate(self.sources) if i < 9}
 
+    def _enabled_source_names(self) -> set[str]:
+        """Return which sources should start enabled.
+
+        Uses the user's last saved selection when one exists, otherwise each
+        source's ``default_on``.
+        """
+        if self.config.enabled_sources is not None:
+            return {n for n in self.config.enabled_sources if n in self._by_name}
+        return {s.name for s in self.sources if s.default_on}
+
     def _initial_selections(self) -> list[Selection]:
         """Build the source selections as fixed-width columns.
 
@@ -159,11 +171,12 @@ class TelltapeApp(App[None]):
         constant width so the list reads as a table rather than ragged text.
         """
         key_map = self._effective_key_map()
+        enabled = self._enabled_source_names()
         selections = []
         for src in self.sources:
             key = key_map.get(src.name) or ""
             label = f"{key:<2}{src.name:<18.18} {src.category:<7.7} {src.group:<11.11}"
-            selections.append(Selection(label, src.name, src.default_on))
+            selections.append(Selection(label, src.name, src.name in enabled))
         return selections
 
     def on_mount(self) -> None:
@@ -175,8 +188,10 @@ class TelltapeApp(App[None]):
         self._tape.border_title = "Live tape"
         for message in self._load_errors:
             self.notify(message, title="Config", severity="warning", timeout=10)
-        initial = [s for s in self.sources if s.default_on]
+        enabled = self._enabled_source_names()
+        initial = [s for s in self.sources if s.name in enabled]
         self.run_worker(self.engine.run(initial=initial), name="engine")
+        self._sources_ready = True
         if self.config.contact_email:
             self.run_worker(self._load_company_table(), name="companies")
         else:
@@ -230,6 +245,12 @@ class TelltapeApp(App[None]):
             self.engine.enable(self._by_name[name])
         for name in active - selected:
             self.engine.disable(name)
+        if self._sources_ready:
+            # Persist the selection (in source order) so it survives a restart.
+            self.config.enabled_sources = [
+                s.name for s in self.sources if s.name in selected
+            ]
+            save_config(self.config)
 
     def on_key(self, event) -> None:
         if len(event.key) == 1 and event.key in "123456789":

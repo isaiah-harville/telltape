@@ -145,6 +145,36 @@ async def test_alert_config_persists_across_restart(app):
     assert restarted.settings["keyword"] == "war"
 
 
+async def test_enabled_sources_persist_across_restart(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("A")  # all on, incl. EDGAR 8-K (default off)
+        await pilot.pause()
+        assert set(app.config.enabled_sources) == {"CNBC", "NPR", "EDGAR 8-K"}
+
+    restarted = TelltapeApp(sources=app.sources)
+    async with restarted.run_test() as pilot:
+        await pilot.pause()
+        sl = restarted.query_one("#sources", SelectionList)
+        # Restored from config, not from each source's default_on.
+        assert set(sl.selected) == {"CNBC", "NPR", "EDGAR 8-K"}
+        assert restarted.engine.active_names == {"CNBC", "NPR", "EDGAR 8-K"}
+
+
+async def test_disabling_all_sources_persists_as_empty(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("X")  # all off
+        await pilot.pause()
+        assert app.config.enabled_sources == []
+
+    restarted = TelltapeApp(sources=app.sources)
+    async with restarted.run_test() as pilot:
+        await pilot.pause()
+        sl = restarted.query_one("#sources", SelectionList)
+        assert set(sl.selected) == set()
+
+
 async def test_open_settings_and_save(app):
     async with app.run_test() as pilot:
         await pilot.pause()

@@ -16,6 +16,7 @@ def test_defaults():
     assert c.watchlist == []
     assert c.keyword == ""
     assert c.alerts == []
+    assert c.enabled_sources is None
     assert c.key_bindings == {}
 
 
@@ -43,12 +44,28 @@ def test_save_then_load_round_trip():
         watchlist=["AAPL", "Tesla"],
         keyword="war",
         alerts=["recall", "bankruptcy"],
+        enabled_sources=["CNBC Markets", "EDGAR 8-K"],
         key_bindings={"1": "CNBC Markets", "2": "EDGAR 8-K"},
     )
     save_config(original)
     loaded, error = load_config()
     assert error is None
     assert loaded == original
+
+
+def test_enabled_sources_unset_is_omitted():
+    save_config(Config())  # enabled_sources is None
+    assert "enabled_sources" not in paths.config_file().read_text()
+    loaded, _ = load_config()
+    assert loaded.enabled_sources is None
+
+
+def test_enabled_sources_empty_list_persists():
+    # An explicit empty list ("everything off") must be distinct from unset.
+    save_config(Config(enabled_sources=[]))
+    assert "enabled_sources = []" in paths.config_file().read_text()
+    loaded, _ = load_config()
+    assert loaded.enabled_sources == []
 
 
 def test_alert_fields_round_trip_with_quoting():

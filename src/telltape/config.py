@@ -33,6 +33,9 @@ class Config:
         watchlist: Tickers or company names the tape is filtered to (empty = all).
         keyword: Term highlighted wherever it appears in the tape.
         alerts: Tickers or keywords that trigger a notification.
+        enabled_sources: Names of the sources the user last had enabled. ``None``
+            means "never configured", in which case each source's ``default_on``
+            decides; an explicit (possibly empty) list overrides the defaults.
     """
 
     contact_email: str = ""
@@ -43,6 +46,7 @@ class Config:
     watchlist: list[str] = field(default_factory=list)
     keyword: str = ""
     alerts: list[str] = field(default_factory=list)
+    enabled_sources: list[str] | None = None
     key_bindings: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -91,6 +95,10 @@ def load_config() -> tuple[Config, str | None]:
         config.keyword = data["keyword"]
     if isinstance(data.get("alerts"), list):
         config.alerts = [t for t in data["alerts"] if isinstance(t, str)]
+    if isinstance(data.get("enabled_sources"), list):
+        config.enabled_sources = [
+            s for s in data["enabled_sources"] if isinstance(s, str)
+        ]
     if isinstance(data.get("key_bindings"), dict):
         config.key_bindings = {
             str(k): v for k, v in data["key_bindings"].items() if isinstance(v, str)
@@ -127,6 +135,8 @@ def _render_toml(config: Config) -> str:
         f"watchlist = {_toml_str_array(config.watchlist)}",
         f"alerts = {_toml_str_array(config.alerts)}",
     ]
+    if config.enabled_sources is not None:
+        lines.append(f"enabled_sources = {_toml_str_array(config.enabled_sources)}")
     if config.key_bindings:
         lines.append("\n[key_bindings]")
         for k in sorted(config.key_bindings):
