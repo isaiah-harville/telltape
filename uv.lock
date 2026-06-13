@@ -467,7 +467,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/9e/bd/3704a8c3e0942d711
 
 [[package]]
 name = "telltape"
-version = "0.1.1"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

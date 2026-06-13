@@ -1,6 +1,6 @@
 [project]
 name = "telltape"
-version = "0.1.1"
+version = "0.2.0"
 description = "Market-moving financial and world news headlines in your terminal."
 authors = [
     { name = "Isaiah Harville", email = "isaiah@harville.dev" }
