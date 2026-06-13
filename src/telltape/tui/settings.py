@@ -28,6 +28,7 @@ class SettingsScreen(ModalScreen[dict | None]):
         alerts: list[str],
         alerts_sound: bool,
         theme: str,
+        vim_keys: bool,
         source_names: list[str],
         key_bindings: dict[str, str],
     ) -> None:
@@ -40,6 +41,7 @@ class SettingsScreen(ModalScreen[dict | None]):
         self._alerts_sound = alerts_sound
         self._theme = theme
         self._original_theme = theme
+        self._vim_keys = vim_keys
         self._source_names = source_names
         self._key_bindings = key_bindings
 
@@ -80,6 +82,11 @@ class SettingsScreen(ModalScreen[dict | None]):
             )
             yield Checkbox(
                 "Play sound on alerts", value=self._alerts_sound, id="alerts_sound"
+            )
+            yield Checkbox(
+                "Vim keys — j/k/g/G and ctrl-d/ctrl-u to navigate",
+                value=self._vim_keys,
+                id="vim_keys",
             )
             yield Label(
                 "Key bindings — assign a source to each number key (blank = unbound)"
@@ -142,6 +149,7 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "alerts": alerts,
                 "alerts_sound": self.query_one("#alerts_sound", Checkbox).value,
                 "theme": str(self.query_one("#theme", Select).value),
+                "vim_keys": self.query_one("#vim_keys", Checkbox).value,
                 "key_bindings": key_bindings,
             }
         )

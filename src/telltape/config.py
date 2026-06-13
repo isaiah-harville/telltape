@@ -28,12 +28,15 @@ class Config:
         alerts_sound: Whether to ring the terminal bell on an alert match.
         fuzzy_threshold: Similarity score (0-100) at or above which two
             headlines are treated as duplicates.
+        vim_keys: Whether vim-style navigation (j/k/g/G, ctrl-d/ctrl-u) is
+            enabled for the tape and source list.
     """
 
     contact_email: str = ""
     theme: str = DEFAULT_THEME
     alerts_sound: bool = True
     fuzzy_threshold: float = 88.0
+    vim_keys: bool = False
     key_bindings: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -74,6 +77,8 @@ def load_config() -> tuple[Config, str | None]:
         config.alerts_sound = data["alerts_sound"]
     if isinstance(data.get("fuzzy_threshold"), int | float):
         config.fuzzy_threshold = float(data["fuzzy_threshold"])
+    if isinstance(data.get("vim_keys"), bool):
+        config.vim_keys = data["vim_keys"]
     if isinstance(data.get("key_bindings"), dict):
         config.key_bindings = {
             str(k): v for k, v in data["key_bindings"].items() if isinstance(v, str)
@@ -100,6 +105,7 @@ def _render_toml(config: Config) -> str:
         f"theme = {quote(config.theme)}",
         f"alerts_sound = {'true' if config.alerts_sound else 'false'}",
         f"fuzzy_threshold = {config.fuzzy_threshold}",
+        f"vim_keys = {'true' if config.vim_keys else 'false'}",
     ]
     if config.key_bindings:
         lines.append("\n[key_bindings]")
