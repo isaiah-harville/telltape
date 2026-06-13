@@ -32,7 +32,7 @@ Match the surrounding code:
 
 ## Commits & pull requests
 
-- Preferrably install the pre-commit config
+- Preferably install the pre-commit config
 - Keep PRs focused; one logical change per PR.
 - Write clear commit messages (imperative mood, e.g. "Add EDGAR S-1 feed").
 - Reference any related issue, and note how you tested.
