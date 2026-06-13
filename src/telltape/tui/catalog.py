@@ -54,7 +54,7 @@ class SourceCatalogScreen(ModalScreen[set[str] | None]):
                 yield Button("Cancel", id="cat-cancel")
 
     def on_mount(self) -> None:
-        self._render("")
+        self._rebuild("")
 
     # --- grouping ---------------------------------------------------------
 
@@ -67,7 +67,7 @@ class SourceCatalogScreen(ModalScreen[set[str] | None]):
                 seen.append(label)
         return seen
 
-    def _render(self, query: str) -> None:
+    def _rebuild(self, query: str) -> None:
         """Rebuild the grouped lists, showing only sources matching ``query``.
 
         Selections made since the last render are harvested first so toggles
@@ -113,7 +113,7 @@ class SourceCatalogScreen(ModalScreen[set[str] | None]):
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "catalog-search":
-            self._render(event.value)
+            self._rebuild(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cat-cancel":

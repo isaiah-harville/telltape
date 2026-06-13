@@ -94,11 +94,11 @@ class TelltapeApp(App[None]):
     BINDINGS = [
         ("s", "settings", "Settings"),
         ("b", "browse_sources", "Catalog"),
-        ("l", "alerts", "Alerts"),
+        ("a", "alerts", "Alerts"),
         ("t", "toggle_pause", "Pause"),
         ("c", "clear_tape", "Clear"),
-        ("a", "all_sources", "All on"),
-        ("x", "no_sources", "All off"),
+        ("A", "all_sources", "All on"),
+        ("X", "no_sources", "All off"),
         ("q", "confirm_quit", "Quit"),
     ]
 
