@@ -39,6 +39,7 @@ class SettingsScreen(ModalScreen[dict | None]):
         max_age: float | None,
         theme: str,
         vim_keys: bool,
+        poll_scale: float,
         source_names: list[str],
         key_bindings: dict[str, str],
     ) -> None:
@@ -48,6 +49,7 @@ class SettingsScreen(ModalScreen[dict | None]):
         self._theme = theme
         self._original_theme = theme
         self._vim_keys = vim_keys
+        self._poll_scale = poll_scale
         self._source_names = source_names
         self._key_bindings = key_bindings
 
@@ -75,6 +77,11 @@ class SettingsScreen(ModalScreen[dict | None]):
             )
             yield Label("Max age — hide items older than N seconds (blank = no limit)")
             yield Input(value=self._fmt_age(), id="max_age", placeholder="e.g. 600")
+            yield Label(
+                "Poll speed — interval multiplier (1.0 = default, lower = faster; "
+                "SEC filings unaffected)"
+            )
+            yield Input(value=str(self._poll_scale), id="poll_scale", placeholder="1.0")
             yield Checkbox(
                 "Vim keys — j/k/g/G and ctrl-d/ctrl-u to navigate",
                 value=self._vim_keys,
@@ -123,6 +130,12 @@ class SettingsScreen(ModalScreen[dict | None]):
             max_age = float(raw_age) if raw_age else None
         except ValueError:
             max_age = None
+        raw_scale = self.query_one("#poll_scale", Input).value.strip()
+        try:
+            poll_scale = float(raw_scale) if raw_scale else 1.0
+        except ValueError:
+            poll_scale = 1.0
+        poll_scale = min(10.0, max(0.25, poll_scale))
         key_bindings: dict[str, str] = {}
         for i in range(1, 10):
             val = self.query_one(f"#kb_{i}", Select).value
@@ -133,6 +146,7 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "max_age": max_age,
                 "theme": str(self.query_one("#theme", Select).value),
                 "vim_keys": self.query_one("#vim_keys", Checkbox).value,
+                "poll_scale": poll_scale,
                 "key_bindings": key_bindings,
             }
         )

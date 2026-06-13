@@ -9,6 +9,8 @@ bindings; the Alerts dialog holds the watchlist, highlight keyword, and alerts.
 from __future__ import annotations
 
 import asyncio
+import time
+from collections import deque
 
 from textual import events
 from textual.app import App, ComposeResult, SystemCommand
@@ -29,6 +31,11 @@ from .catalog import SourceCatalogScreen
 from .contact import ContactScreen
 from .quit import QuitScreen
 from .settings import SettingsScreen
+
+# Most lines kept in view; the buffer holds a little more so age-sorting and
+# max-age filtering have headroom.
+_TAPE_LINES = 500
+_BUFFER_LINES = 2000
 
 
 class TapeLog(RichLog):
@@ -134,8 +141,11 @@ class TelltapeApp(App[None]):
             on_headline=self._on_headline,
             user_agent=self.config.user_agent,
             dedup_threshold=self.config.fuzzy_threshold,
+            poll_scale=self.config.poll_scale,
         )
         self._tape: RichLog | None = None
+        # Recent headlines kept so the tape can be repainted sorted by age.
+        self._buffer: deque[tuple[Headline, bool]] = deque(maxlen=_BUFFER_LINES)
         # Guards against persisting the source selection during initial mount.
         self._sources_ready = False
 
@@ -186,6 +196,9 @@ class TelltapeApp(App[None]):
         ).border_title = "Sources  (click / 1-9)"
         self._tape = self.query_one("#tape", RichLog)
         self._tape.border_title = "Live tape"
+        # Repaint on a timer so ages tick up and ordering stays correct even
+        # between arrivals.
+        self.set_interval(1.0, self._repaint)
         for message in self._load_errors:
             self.notify(message, title="Config", severity="warning", timeout=10)
         enabled = self._enabled_source_names()
@@ -302,23 +315,51 @@ class TelltapeApp(App[None]):
     # --- headline sink ----------------------------------------------------
 
     def _on_headline(self, headline: Headline) -> None:
-        if self.paused or self._tape is None:
+        """Buffer a new headline and refresh the tape.
+
+        Items arrive out of published order across sources, so rather than
+        appending we keep a buffer and repaint it sorted by age (see
+        ``_repaint``). The alert bell/notification fires once here, on arrival.
+        """
+        if self.paused:
             return
-        if self.settings["max_age"] is not None:
-            age = headline.age
-            if age is not None and age > self.settings["max_age"]:
-                return
         # An alert match is always shown, even if the watchlist would hide it.
         is_alert = self.alerts.active and self.alerts.matches(headline)
         if not (is_alert or self.watchlist.matches(headline)):
             return
-        self._tape.write(
-            format_headline(headline, keyword=self.settings["keyword"], alert=is_alert)
-        )
+        self._buffer.append((headline, is_alert))
         if is_alert:
             if self.config.alerts_sound:
                 self.bell()
             self.notify(headline.title.strip(), title="Alert", severity="warning")
+        self._repaint()
+
+    def _repaint(self) -> None:
+        """Render the buffered headlines sorted by published age.
+
+        Called on each arrival and on a timer so ages stay current. The tape is
+        cleared and rewritten oldest-first, so the freshest item sits at the
+        bottom; items past ``max_age`` (and the oldest beyond the line cap) are
+        dropped from view.
+        """
+        if self._tape is None or self.paused:
+            return
+        now = time.time()
+        max_age = self.settings["max_age"]
+        visible = [
+            (h, alert)
+            for (h, alert) in self._buffer
+            if max_age is None or h.age is None or h.age <= max_age
+        ]
+        # Oldest first (newest at the bottom); undated items count as current.
+        visible.sort(
+            key=lambda ha: (ha[0].ts_published is None, ha[0].ts_published or now)
+        )
+        visible = visible[-_TAPE_LINES:]
+        keyword = self.settings["keyword"]
+        self._tape.clear()
+        for headline, alert in visible:
+            self._tape.write(format_headline(headline, keyword=keyword, alert=alert))
 
     # --- actions ----------------------------------------------------------
 
@@ -358,6 +399,7 @@ class TelltapeApp(App[None]):
                 max_age=self.settings["max_age"],
                 theme=self.config.theme,
                 vim_keys=self.config.vim_keys,
+                poll_scale=self.config.poll_scale,
                 source_names=[s.name for s in self.sources],
                 key_bindings=dict(self.config.key_bindings),
             ),
@@ -413,6 +455,9 @@ class TelltapeApp(App[None]):
             return
         self.settings["max_age"] = result["max_age"]
         self.config.vim_keys = result["vim_keys"]
+        self.config.poll_scale = result["poll_scale"]
+        # Takes effect on each source's next poll cycle.
+        self.engine.poller.interval_scale = result["poll_scale"]
 
         if result["theme"] != self.config.theme:
             self.config.theme = result["theme"]
@@ -446,8 +491,12 @@ class TelltapeApp(App[None]):
     def action_toggle_pause(self) -> None:
         self.paused = not self.paused
         self.notify("Paused" if self.paused else "Resumed")
+        if not self.paused:
+            # Unfreeze: redraw immediately rather than waiting for the timer.
+            self._repaint()
 
     def action_clear_tape(self) -> None:
+        self._buffer.clear()
         if self._tape is not None:
             self._tape.clear()
 

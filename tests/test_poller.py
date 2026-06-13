@@ -165,6 +165,28 @@ async def test_start_and_stop_track_active_sources():
     await poller.aclose()
 
 
+def test_interval_scale_speeds_up_news():
+    poller = FeedPoller(asyncio.Queue(), interval_scale=0.5)
+    assert poller._interval(FeedSource("N", "u", interval=8.0)) == 4.0
+
+
+def test_interval_scale_has_a_floor():
+    poller = FeedPoller(asyncio.Queue(), interval_scale=0.1)
+    # 8 * 0.1 = 0.8, clamped to the 3.0s floor.
+    assert poller._interval(FeedSource("N", "u", interval=8.0)) == 3.0
+
+
+def test_filing_interval_is_never_scaled():
+    poller = FeedPoller(asyncio.Queue(), interval_scale=0.25)
+    src = FeedSource("EDGAR", "u", category=FILING, interval=20.0)
+    assert poller._interval(src) == 20.0
+
+
+def test_default_scale_leaves_interval_unchanged():
+    poller = FeedPoller(asyncio.Queue())
+    assert poller._interval(FeedSource("N", "u", interval=8.0)) == 8.0
+
+
 def test_set_user_agent_updates_client_header():
     queue: asyncio.Queue = asyncio.Queue()
     client = httpx.AsyncClient()

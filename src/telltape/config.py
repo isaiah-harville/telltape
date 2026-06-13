@@ -36,6 +36,8 @@ class Config:
         enabled_sources: Names of the sources the user last had enabled. ``None``
             means "never configured", in which case each source's ``default_on``
             decides; an explicit (possibly empty) list overrides the defaults.
+        poll_scale: Multiplier on non-filing poll intervals; below 1 polls
+            faster. SEC filing feeds ignore it.
     """
 
     contact_email: str = ""
@@ -43,6 +45,7 @@ class Config:
     alerts_sound: bool = True
     fuzzy_threshold: float = 88.0
     vim_keys: bool = False
+    poll_scale: float = 1.0
     watchlist: list[str] = field(default_factory=list)
     keyword: str = ""
     alerts: list[str] = field(default_factory=list)
@@ -89,6 +92,8 @@ def load_config() -> tuple[Config, str | None]:
         config.fuzzy_threshold = float(data["fuzzy_threshold"])
     if isinstance(data.get("vim_keys"), bool):
         config.vim_keys = data["vim_keys"]
+    if isinstance(data.get("poll_scale"), int | float):
+        config.poll_scale = float(data["poll_scale"])
     if isinstance(data.get("watchlist"), list):
         config.watchlist = [t for t in data["watchlist"] if isinstance(t, str)]
     if isinstance(data.get("keyword"), str):
@@ -131,6 +136,7 @@ def _render_toml(config: Config) -> str:
         f"alerts_sound = {'true' if config.alerts_sound else 'false'}",
         f"fuzzy_threshold = {config.fuzzy_threshold}",
         f"vim_keys = {'true' if config.vim_keys else 'false'}",
+        f"poll_scale = {config.poll_scale}",
         f"keyword = {quote(config.keyword)}",
         f"watchlist = {_toml_str_array(config.watchlist)}",
         f"alerts = {_toml_str_array(config.alerts)}",

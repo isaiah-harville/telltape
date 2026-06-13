@@ -13,6 +13,7 @@ def test_defaults():
     assert c.alerts_sound is True
     assert c.fuzzy_threshold == 88.0
     assert c.vim_keys is False
+    assert c.poll_scale == 1.0
     assert c.watchlist == []
     assert c.keyword == ""
     assert c.alerts == []
@@ -41,6 +42,7 @@ def test_save_then_load_round_trip():
         alerts_sound=False,
         fuzzy_threshold=75.0,
         vim_keys=True,
+        poll_scale=0.5,
         watchlist=["AAPL", "Tesla"],
         keyword="war",
         alerts=["recall", "bankruptcy"],

@@ -34,6 +34,7 @@ class NewsEngine:
         dedup_capacity: int = 5000,
         dedup_threshold: float = 88.0,
         max_age: float | None = None,
+        poll_scale: float = 1.0,
     ) -> None:
         """Initialize the engine.
 
@@ -45,12 +46,15 @@ class NewsEngine:
             max_age: If set, headlines already older than this many seconds when
                 received are dropped. Useful for suppressing the backlog a feed
                 returns on its first poll.
+            poll_scale: Multiplier applied to non-filing poll intervals.
         """
         self.on_headline = on_headline
         self.max_age = max_age
         self.queue: asyncio.Queue[Headline] = asyncio.Queue()
         self.deduper = Deduper(capacity=dedup_capacity, threshold=dedup_threshold)
-        self.poller = FeedPoller(self.queue, user_agent=user_agent)
+        self.poller = FeedPoller(
+            self.queue, user_agent=user_agent, interval_scale=poll_scale
+        )
         self._sources: dict[str, FeedSource] = {}
         self._consumer: asyncio.Task[None] | None = None
 

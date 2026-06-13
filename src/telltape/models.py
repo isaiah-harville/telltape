@@ -44,7 +44,7 @@ class FeedSource:
     url: str
     category: str = NEWS
     group: str = ""
-    interval: float = 15.0
+    interval: float = 8.0
     default_on: bool = True
     headers: dict[str, str] = field(default_factory=dict)
 

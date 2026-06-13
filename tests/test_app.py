@@ -7,6 +7,8 @@ contact dialog does not appear.
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from textual.widgets import Button, Checkbox, Input, SelectionList
 
@@ -15,6 +17,8 @@ from telltape.tui.alerts import AlertsScreen
 from telltape.tui.app import TelltapeApp
 from telltape.tui.catalog import SourceCatalogScreen
 from telltape.tui.settings import SettingsScreen
+
+from .conftest import make_headline
 
 
 @pytest.fixture
@@ -259,3 +263,70 @@ async def test_catalog_cancel_leaves_sources_unchanged(app):
         await pilot.click("#cat-cancel")
         await pilot.pause()
         assert set(sl.selected) == before
+
+
+def _tape_texts(app) -> list[str]:
+    """Plain text of each rendered tape line."""
+    return [line.text for line in app._tape.lines]
+
+
+def _index_of(texts: list[str], needle: str) -> int:
+    return next(i for i, t in enumerate(texts) if needle in t)
+
+
+async def test_tape_renders_sorted_by_age(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        now = time.time()
+        # Feed out of published order; the tape must reorder by age.
+        app._on_headline(make_headline("Oldest", ts_published=now - 300, url="u1"))
+        app._on_headline(make_headline("Newest", ts_published=now - 10, url="u2"))
+        app._on_headline(make_headline("Middle", ts_published=now - 100, url="u3"))
+        await pilot.pause()
+        texts = _tape_texts(app)
+        # Oldest at the top, newest at the bottom.
+        assert (
+            _index_of(texts, "Oldest")
+            < _index_of(texts, "Middle")
+            < _index_of(texts, "Newest")
+        )
+
+
+async def test_tape_hides_items_past_max_age(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.settings["max_age"] = 120
+        now = time.time()
+        app._on_headline(make_headline("Stale", ts_published=now - 600, url="u1"))
+        app._on_headline(make_headline("Fresh", ts_published=now - 30, url="u2"))
+        await pilot.pause()
+        joined = "\n".join(_tape_texts(app))
+        assert "Fresh" in joined
+        assert "Stale" not in joined
+
+
+async def test_clear_tape_empties_buffer(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app._on_headline(make_headline("Something", url="u1"))
+        await pilot.pause()
+        app.action_clear_tape()
+        await pilot.pause()
+        assert len(app._buffer) == 0
+        assert "Something" not in "\n".join(_tape_texts(app))
+
+
+async def test_poll_scale_persists_and_applies(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("s")
+        await pilot.pause()
+        app.screen.query_one("#poll_scale", Input).value = "0.5"
+        app.screen.query_one("#save", Button).press()
+        await pilot.pause()
+        assert app.config.poll_scale == 0.5
+        assert app.engine.poller.interval_scale == 0.5
+
+    restarted = TelltapeApp(sources=app.sources)
+    assert restarted.config.poll_scale == 0.5
+    assert restarted.engine.poller.interval_scale == 0.5

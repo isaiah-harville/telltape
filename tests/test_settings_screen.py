@@ -13,6 +13,7 @@ def _settings(
     max_age: float | None = None,
     theme: str = "nord",
     vim_keys: bool = False,
+    poll_scale: float = 1.0,
     source_names: list[str] | None = None,
     key_bindings: dict[str, str] | None = None,
 ) -> SettingsScreen:
@@ -21,9 +22,34 @@ def _settings(
         max_age=max_age,
         theme=theme,
         vim_keys=vim_keys,
+        poll_scale=poll_scale,
         source_names=source_names or ["CNBC", "NPR"],
         key_bindings=key_bindings or {},
     )
+
+
+async def test_poll_scale_parsed_and_clamped(host_app):
+    result = {}
+    async with host_app.run_test() as pilot:
+        await pilot.pause()
+        host_app.push_screen(_settings(), lambda r: result.__setitem__("v", r))
+        await pilot.pause()
+        host_app.screen.query_one("#poll_scale", Input).value = "0.01"  # below floor
+        host_app.screen.query_one("#save", Button).press()
+        await pilot.pause()
+        assert result["v"]["poll_scale"] == 0.25  # clamped to minimum
+
+
+async def test_invalid_poll_scale_defaults_to_one(host_app):
+    result = {}
+    async with host_app.run_test() as pilot:
+        await pilot.pause()
+        host_app.push_screen(_settings(), lambda r: result.__setitem__("v", r))
+        await pilot.pause()
+        host_app.screen.query_one("#poll_scale", Input).value = "fast"
+        host_app.screen.query_one("#save", Button).press()
+        await pilot.pause()
+        assert result["v"]["poll_scale"] == 1.0
 
 
 async def test_save_parses_values(host_app):

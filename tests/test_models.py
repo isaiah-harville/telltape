@@ -15,7 +15,7 @@ def test_feedsource_defaults():
     src = FeedSource("CNBC", "https://example.com/rss")
     assert src.category == NEWS
     assert src.group == ""
-    assert src.interval == 15.0
+    assert src.interval == 8.0
     assert src.default_on is True
     assert src.headers == {}
 

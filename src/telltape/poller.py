@@ -19,7 +19,7 @@ import time
 import feedparser
 import httpx
 
-from .models import FeedSource, Headline
+from .models import FILING, FeedSource, Headline
 from .tickers import extract_tickers
 
 log = logging.getLogger("telltape.poller")
@@ -28,6 +28,9 @@ log = logging.getLogger("telltape.poller")
 # require a contact (such as the SEC) will reject this; a real contact is
 # supplied at runtime from user configuration.
 DEFAULT_USER_AGENT = "telltape/0.1"
+
+# Lower bound on any polling interval, so a small scale cannot hammer a feed.
+_MIN_INTERVAL = 3.0
 
 
 class FeedPoller:
@@ -39,6 +42,7 @@ class FeedPoller:
         *,
         client: httpx.AsyncClient | None = None,
         user_agent: str = DEFAULT_USER_AGENT,
+        interval_scale: float = 1.0,
     ) -> None:
         """Initialize the poller.
 
@@ -47,9 +51,12 @@ class FeedPoller:
             client: HTTP client to use. If omitted, one is created and owned by
                 the poller and closed on ``aclose``.
             user_agent: User-Agent sent with every request.
+            interval_scale: Multiplier applied to non-filing intervals; below 1
+                polls faster. SEC filing feeds ignore it for fair-access safety.
         """
         self.queue = queue
         self.user_agent = user_agent
+        self.interval_scale = interval_scale
         self._client = client
         self._owns_client = client is None
         self._tasks: dict[str, asyncio.Task[None]] = {}
@@ -116,10 +123,21 @@ class FeedPoller:
                 headers={"User-Agent": self.user_agent},
             )
 
+    def _interval(self, src: FeedSource) -> float:
+        """Return the effective poll interval for a source.
+
+        The configured ``interval_scale`` speeds up or slows down ordinary
+        feeds, clamped to a floor. SEC filing feeds are left at their configured
+        interval regardless, to respect the SEC's fair-access policy.
+        """
+        if src.category == FILING:
+            return src.interval
+        return max(_MIN_INTERVAL, src.interval * self.interval_scale)
+
     async def _poll_loop(self, src: FeedSource) -> None:
-        """Poll a single source forever at its configured interval."""
+        """Poll a single source forever at its effective interval."""
         # Stagger startup so that not every feed is requested at once.
-        await asyncio.sleep(random.uniform(0, min(src.interval, 3.0)))
+        await asyncio.sleep(random.uniform(0, min(self._interval(src), 3.0)))
         while True:
             started = time.monotonic()
             try:
@@ -130,7 +148,7 @@ class FeedPoller:
                 # A single failing feed must not affect the others.
                 log.warning("poll failed for %s: %s", src.name, exc)
             elapsed = time.monotonic() - started
-            await asyncio.sleep(max(0.0, src.interval - elapsed))
+            await asyncio.sleep(max(0.0, self._interval(src) - elapsed))
 
     async def _poll_once(self, src: FeedSource) -> None:
         """Fetch a source once and enqueue any new entries."""
