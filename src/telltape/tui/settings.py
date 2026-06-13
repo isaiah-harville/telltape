@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, Input, Label, Select, Static
@@ -98,16 +98,19 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "Key bindings — assign a source to each number key (blank = unbound)"
             )
             options = [("(unbound)", "")] + [(n, n) for n in self._source_names]
-            for i in range(1, 10):
-                bound = self._key_bindings.get(str(i), "")
-                with Horizontal(classes="kb-row"):
-                    yield Static(f"{i}", classes="kb-key")
-                    yield Select(
-                        options,
-                        value=bound or "",
-                        id=f"kb_{i}",
-                        allow_blank=False,
-                    )
+            # Nine Selects would make the dialog very tall, so they live in their
+            # own bounded, scrollable area and the rest of the form stays in view.
+            with VerticalScroll(id="kb-scroll"):
+                for i in range(1, 10):
+                    bound = self._key_bindings.get(str(i), "")
+                    with Horizontal(classes="kb-row"):
+                        yield Static(f"{i}", classes="kb-key")
+                        yield Select(
+                            options,
+                            value=bound or "",
+                            id=f"kb_{i}",
+                            allow_blank=False,
+                        )
             with Horizontal(id="settings-buttons"):
                 yield Button("Save", variant="primary", id="save")
                 yield Button("Cancel", id="cancel")

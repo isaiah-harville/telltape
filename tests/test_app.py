@@ -133,6 +133,53 @@ async def test_open_settings_and_save(app):
         assert app.config.vim_keys is True
 
 
+async def test_source_rows_show_columns(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        sl = app.query_one("#sources", SelectionList)
+        prompt = sl.get_option_at_index(0).prompt
+        text = prompt if isinstance(prompt, str) else prompt.plain
+        # The first source is CNBC (news / Wires).
+        assert "CNBC" in text
+        assert "news" in text
+        assert "Wires" in text
+
+
+async def test_save_email_button_persists_without_closing(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("s")
+        await pilot.pause()
+        app.screen.query_one("#contact", Input).value = "new@x.com"
+        app.screen.query_one("#save_email", Button).press()
+        await pilot.pause()
+        assert app.config.contact_email == "new@x.com"
+        assert isinstance(app.screen, SettingsScreen)  # dialog stays open
+
+
+async def test_invalid_email_is_not_saved(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("s")
+        await pilot.pause()
+        app.screen.query_one("#contact", Input).value = "not-an-email"
+        app.screen.query_one("#save_email", Button).press()
+        await pilot.pause()
+        assert app.config.contact_email == "trader@x.com"  # unchanged
+
+
+async def test_main_save_does_not_change_email(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("s")
+        await pilot.pause()
+        app.screen.query_one("#contact", Input).value = "changed@x.com"
+        app.screen.query_one("#save", Button).press()  # main Save
+        await pilot.pause()
+        # Email is saved only by its own button, never by the main Save.
+        assert app.config.contact_email == "trader@x.com"
+
+
 async def test_open_catalog_enable_all_and_save(app):
     async with app.run_test() as pilot:
         await pilot.pause()

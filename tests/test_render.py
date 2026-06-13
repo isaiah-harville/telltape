@@ -13,7 +13,7 @@ from .conftest import make_headline
 
 
 def test_age_str_unknown():
-    assert _age_str(make_headline(ts_published=None)) == "  --  "
+    assert _age_str(make_headline(ts_published=None)).strip() == "--"
 
 
 def test_age_str_seconds():
@@ -24,8 +24,17 @@ def test_age_str_minutes():
     assert _age_str(make_headline(ts_published=time.time() - 120)).strip() == "2m"
 
 
-def test_age_str_hours():
-    assert _age_str(make_headline(ts_published=time.time() - 7200)).strip() == "2h"
+def test_age_str_hours_and_minutes():
+    # 2 hours 5 minutes -> "2h05m", not just "2h".
+    assert _age_str(make_headline(ts_published=time.time() - 7500)).strip() == "2h05m"
+
+
+def test_age_str_columns_are_fixed_width():
+    widths = {
+        len(_age_str(make_headline(ts_published=t)))
+        for t in (None, time.time() - 5, time.time() - 120, time.time() - 7500)
+    }
+    assert widths == {7}
 
 
 def test_format_includes_source_and_title():

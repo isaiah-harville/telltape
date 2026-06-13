@@ -48,7 +48,7 @@ class TelltapeApp(App[None]):
 
     CSS = """
     #body { height: 1fr; }
-    #sources { width: 38; border: round $accent; padding: 0 1; }
+    #sources { width: 48; border: round $accent; padding: 0 1; }
     #tape { border: round $accent; padding: 0 1; }
 
     SettingsScreen, ContactScreen, QuitScreen, AlertsScreen { align: center middle; }
@@ -62,8 +62,11 @@ class TelltapeApp(App[None]):
         text-style: bold; width: 1fr; text-align: center;
     }
     #settings-box Label, #contact-box Label, #quit-box Label, #alerts-box Label {
-        margin-top: 1; color: $text-muted;
+        margin-top: 1; color: $text-muted; width: 1fr;
     }
+    .email-row { height: auto; }
+    .email-row Input { width: 1fr; }
+    .email-row Button { margin-left: 1; width: auto; min-width: 14; }
     #contact-error { color: $error; }
     #settings-buttons, #contact-buttons, #quit-buttons, #alerts-buttons {
         height: auto; margin-top: 1; align-horizontal: right;
@@ -72,6 +75,7 @@ class TelltapeApp(App[None]):
     #alerts-buttons Button {
         margin-left: 2;
     }
+    #kb-scroll { height: auto; max-height: 12; border: round $panel; padding: 0 1; }
     .kb-row { height: 3; margin-top: 0; }
     .kb-key { width: 3; content-align: right middle; padding-right: 1; color: $text-muted; }
     .kb-row Select { width: 1fr; }
@@ -145,15 +149,17 @@ class TelltapeApp(App[None]):
         return {src.name: str(i + 1) for i, src in enumerate(self.sources) if i < 9}
 
     def _initial_selections(self) -> list[Selection]:
-        """Build the source selections, prefixing bound sources with their digit."""
+        """Build the source selections as fixed-width columns.
+
+        Each row is ``key  name  category  group`` with the columns padded to a
+        constant width so the list reads as a table rather than ragged text.
+        """
         key_map = self._effective_key_map()
         selections = []
         for src in self.sources:
-            key = key_map.get(src.name)
-            prefix = f"{key} " if key else "  "
-            selections.append(
-                Selection(f"{prefix}{src.name}", src.name, src.default_on)
-            )
+            key = key_map.get(src.name) or ""
+            label = f"{key:<2}{src.name:<18.18} {src.category:<7.7} {src.group:<11.11}"
+            selections.append(Selection(label, src.name, src.default_on))
         return selections
 
     def on_mount(self) -> None:
