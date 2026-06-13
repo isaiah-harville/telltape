@@ -173,12 +173,20 @@ class TelltapeApp(App[None]):
             self.push_screen(ContactScreen(), self._on_contact_provided)
 
     def _on_contact_provided(self, email: str | None) -> None:
-        if not email:
+        if email:
+            self.apply_contact_email(email)
+
+    def apply_contact_email(self, email: str) -> None:
+        """Persist a new contact email and refresh anything that depends on it."""
+        if email == self.config.contact_email:
             return
         self.config.contact_email = email
         save_config(self.config)
         self.engine.set_user_agent(self.config.user_agent)
         self.run_worker(self._load_company_table(), name="companies")
+
+    def on_settings_screen_save_email(self, message: SettingsScreen.SaveEmail) -> None:
+        self.apply_contact_email(message.email)
 
     async def _load_company_table(self) -> None:
         """Load the SEC company table in the background and update the watchlist."""
@@ -373,11 +381,6 @@ class TelltapeApp(App[None]):
         if result["theme"] != self.config.theme:
             self.config.theme = result["theme"]
             self.theme = result["theme"]
-
-        if result["contact_email"] != self.config.contact_email:
-            self.config.contact_email = result["contact_email"]
-            self.engine.set_user_agent(self.config.user_agent)
-            self.run_worker(self._load_company_table(), name="companies")
 
         if result["key_bindings"] != self.config.key_bindings:
             self.config.key_bindings = result["key_bindings"]

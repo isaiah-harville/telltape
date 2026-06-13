@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, Input, Label, Select, Static
+
+from .contact import _EMAIL_RE
 
 
 class SettingsScreen(ModalScreen[dict | None]):
@@ -13,10 +16,21 @@ class SettingsScreen(ModalScreen[dict | None]):
 
     Dismisses with a dictionary of the new values, or ``None`` if cancelled.
     The theme is applied live as a preview and reverted if the dialog is
-    cancelled.
+    cancelled. The contact email is saved on its own, via its dedicated button,
+    rather than as part of the main Save.
     """
 
     BINDINGS = [("escape", "cancel", "Cancel")]
+    # The contact email is consequential, so it is not auto-focused or
+    # auto-selected; the user must click into it deliberately.
+    AUTO_FOCUS = None
+
+    class SaveEmail(Message):
+        """Posted when the user saves the contact email on its own button."""
+
+        def __init__(self, email: str) -> None:
+            super().__init__()
+            self.email = email
 
     def __init__(
         self,
@@ -48,9 +62,14 @@ class SettingsScreen(ModalScreen[dict | None]):
             yield Label(
                 "Contact email — sent to data providers; required for SEC feeds"
             )
-            yield Input(
-                value=self._contact_email, id="contact", placeholder="you@example.com"
-            )
+            with Horizontal(classes="email-row"):
+                yield Input(
+                    value=self._contact_email,
+                    id="contact",
+                    placeholder="you@example.com",
+                    select_on_focus=False,
+                )
+                yield Button("Save email", id="save_email")
             yield Label("Theme")
             yield Select(
                 [(name, name) for name in themes],
@@ -106,6 +125,9 @@ class SettingsScreen(ModalScreen[dict | None]):
         if event.button.id == "cancel":
             self.action_cancel()
             return
+        if event.button.id == "save_email":
+            self._save_email()
+            return
 
         raw_age = self.query_one("#max_age", Input).value.strip()
         try:
@@ -124,7 +146,6 @@ class SettingsScreen(ModalScreen[dict | None]):
                 key_bindings[str(i)] = str(val)
         self.dismiss(
             {
-                "contact_email": self.query_one("#contact", Input).value.strip(),
                 "max_age": max_age,
                 "filters": filters,
                 "keyword": self.query_one("#keyword", Input).value.strip(),
@@ -133,6 +154,15 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "key_bindings": key_bindings,
             }
         )
+
+    def _save_email(self) -> None:
+        """Validate and persist the contact email without closing the dialog."""
+        email = self.query_one("#contact", Input).value.strip()
+        if not _EMAIL_RE.match(email):
+            self.notify("Please enter a valid email address.", severity="warning")
+            return
+        self.post_message(self.SaveEmail(email))
+        self.notify("Contact email saved")
 
     def action_cancel(self) -> None:
         # Revert the live theme preview before closing.
