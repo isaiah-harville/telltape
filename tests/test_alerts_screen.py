@@ -7,10 +7,19 @@ from textual.widgets import Button, Checkbox, Input
 from telltape.tui.alerts import AlertsScreen
 
 
-def _alerts(**over) -> AlertsScreen:
-    base = dict(watchlist=[], keyword="", alerts=[], alerts_sound=True)
-    base.update(over)
-    return AlertsScreen(**base)
+def _alerts(
+    *,
+    watchlist: list[str] | None = None,
+    keyword: str = "",
+    alerts: list[str] | None = None,
+    alerts_sound: bool = True,
+) -> AlertsScreen:
+    return AlertsScreen(
+        watchlist=watchlist or [],
+        keyword=keyword,
+        alerts=alerts or [],
+        alerts_sound=alerts_sound,
+    )
 
 
 async def test_save_parses_all_fields(host_app):

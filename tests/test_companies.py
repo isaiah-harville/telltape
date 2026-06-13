@@ -75,7 +75,9 @@ def test_load_reads_fresh_cache_without_network(tmp_path):
     cache = tmp_path / _CACHE_NAME
     cache.write_text(json.dumps({"0": {"ticker": "AAPL", "title": "Apple Inc."}}))
     table = CompanyTable.load(user_agent="t@x.com", cache_dir=str(tmp_path))
-    assert table.get("AAPL").name == "Apple Inc."
+    company = table.get("AAPL")
+    assert company is not None
+    assert company.name == "Apple Inc."
 
 
 def test_load_refreshes_via_download(monkeypatch, tmp_path):
@@ -111,4 +113,4 @@ def test_load_ignores_stale_cache(monkeypatch, tmp_path):
 def test_company_is_frozen():
     c = Company("AAPL", "Apple Inc.", "apple")
     with pytest.raises(Exception):
-        c.ticker = "X"  # type: ignore[misc]
+        setattr(c, "ticker", "X")

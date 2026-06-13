@@ -25,7 +25,7 @@ def test_feedsource_is_frozen():
 
     src = FeedSource("A", "u", group="Wires")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        src.name = "B"  # type: ignore[misc]
+        setattr(src, "name", "B")
 
 
 def test_feedsource_equality():

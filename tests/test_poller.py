@@ -63,11 +63,13 @@ def test_to_headline_returns_none_without_title():
 def test_to_headline_falls_back_to_updated_time():
     entry = {"title": "x", "updated_parsed": time.gmtime(1_650_000_000)}
     h = FeedPoller._to_headline(FeedSource("S", "u"), entry, 1.0)
+    assert h is not None
     assert h.ts_published == float(calendar.timegm(entry["updated_parsed"]))
 
 
 def test_to_headline_handles_missing_timestamp():
     h = FeedPoller._to_headline(FeedSource("S", "u"), {"title": "x"}, 1.0)
+    assert h is not None
     assert h.ts_published is None
 
 

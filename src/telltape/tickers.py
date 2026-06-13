@@ -15,11 +15,11 @@ import re
 _CASHTAG = re.compile(r"(?<![A-Za-z0-9])\$([A-Z]{1,5})(?:[.\-][A-Z])?\b")
 
 
-def extract_tickers(*texts: str) -> tuple[str, ...]:
+def extract_tickers(*texts: str | None) -> tuple[str, ...]:
     """Extract unique cashtag symbols from one or more texts.
 
     Args:
-        *texts: Strings to scan.
+        *texts: Strings to scan; ``None`` values are ignored.
 
     Returns:
         Unique upper-case symbols in the order first encountered.

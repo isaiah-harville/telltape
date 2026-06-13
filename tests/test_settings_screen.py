@@ -7,17 +7,23 @@ from textual.widgets import Button, Checkbox, Input, Select
 from telltape.tui.settings import SettingsScreen
 
 
-def _settings(**over) -> SettingsScreen:
-    base = dict(
-        contact_email="a@b.com",
-        max_age=None,
-        theme="nord",
-        vim_keys=False,
-        source_names=["CNBC", "NPR"],
-        key_bindings={},
+def _settings(
+    *,
+    contact_email: str = "a@b.com",
+    max_age: float | None = None,
+    theme: str = "nord",
+    vim_keys: bool = False,
+    source_names: list[str] | None = None,
+    key_bindings: dict[str, str] | None = None,
+) -> SettingsScreen:
+    return SettingsScreen(
+        contact_email=contact_email,
+        max_age=max_age,
+        theme=theme,
+        vim_keys=vim_keys,
+        source_names=source_names or ["CNBC", "NPR"],
+        key_bindings=key_bindings or {},
     )
-    base.update(over)
-    return SettingsScreen(**base)
 
 
 async def test_save_parses_values(host_app):
