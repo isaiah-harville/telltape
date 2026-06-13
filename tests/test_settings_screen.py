@@ -11,8 +11,6 @@ def _settings(**over) -> SettingsScreen:
     base = dict(
         contact_email="a@b.com",
         max_age=None,
-        filters=[],
-        keyword="",
         theme="nord",
         vim_keys=False,
         source_names=["CNBC", "NPR"],
@@ -29,16 +27,15 @@ async def test_save_parses_values(host_app):
         host_app.push_screen(_settings(), lambda r: result.__setitem__("v", r))
         await pilot.pause()
         host_app.screen.query_one("#max_age", Input).value = "600"
-        host_app.screen.query_one("#filters", Input).value = "AAPL, oil"
-        host_app.screen.query_one("#keyword", Input).value = "war"
         host_app.screen.query_one("#vim_keys", Checkbox).value = True
         host_app.screen.query_one("#save", Button).press()
         await pilot.pause()
         v = result["v"]
         assert v["max_age"] == 600.0
-        assert v["filters"] == ["AAPL", "oil"]
-        assert v["keyword"] == "war"
         assert v["vim_keys"] is True
+        # Watchlist and keyword moved to the Alerts screen.
+        assert "filters" not in v
+        assert "keyword" not in v
 
 
 async def test_blank_max_age_is_none(host_app):

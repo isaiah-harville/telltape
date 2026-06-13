@@ -13,6 +13,9 @@ def test_defaults():
     assert c.alerts_sound is True
     assert c.fuzzy_threshold == 88.0
     assert c.vim_keys is False
+    assert c.watchlist == []
+    assert c.keyword == ""
+    assert c.alerts == []
     assert c.key_bindings == {}
 
 
@@ -37,12 +40,36 @@ def test_save_then_load_round_trip():
         alerts_sound=False,
         fuzzy_threshold=75.0,
         vim_keys=True,
+        watchlist=["AAPL", "Tesla"],
+        keyword="war",
+        alerts=["recall", "bankruptcy"],
         key_bindings={"1": "CNBC Markets", "2": "EDGAR 8-K"},
     )
     save_config(original)
     loaded, error = load_config()
     assert error is None
     assert loaded == original
+
+
+def test_alert_fields_round_trip_with_quoting():
+    # Terms with commas/quotes must survive the TOML array round-trip.
+    original = Config(watchlist=['a "quoted" name'], alerts=["x\\y"], keyword="war")
+    save_config(original)
+    loaded, error = load_config()
+    assert error is None
+    assert loaded.watchlist == ['a "quoted" name']
+    assert loaded.alerts == ["x\\y"]
+    assert loaded.keyword == "war"
+
+
+def test_empty_alert_arrays_round_trip():
+    save_config(Config())
+    text = paths.config_file().read_text()
+    assert "watchlist = []" in text
+    assert "alerts = []" in text
+    loaded, _ = load_config()
+    assert loaded.watchlist == []
+    assert loaded.alerts == []
 
 
 def test_load_invalid_toml_returns_defaults_with_message():

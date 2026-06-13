@@ -2,7 +2,8 @@
 
 Shows a live scrolling tape of headlines with a toggleable source list. On first
 run it requires a contact email and stores it. Sources are toggled by clicking or
-pressing number keys; settings configure the contact email, theme, and filters.
+pressing number keys. Settings configure the contact email, theme, and key
+bindings; the Alerts dialog holds the watchlist, highlight keyword, and alerts.
 """
 
 from __future__ import annotations
@@ -58,6 +59,7 @@ class TelltapeApp(App[None]):
         border: thick $accent; background: $surface;
     }
     #quit-box { width: 48; }
+    #alerts-box { width: 80; }
     #settings-title, #contact-title, #quit-title, #alerts-title {
         text-style: bold; width: 1fr; text-align: center;
     }
@@ -123,9 +125,11 @@ class TelltapeApp(App[None]):
         # Messages about unreadable config files, surfaced once the UI is up.
         self._load_errors = [e for e in (config_error, feeds_error) if e]
         self.paused = False
-        self.settings: dict = {"max_age": None, "keyword": ""}
-        self.watchlist = Watchlist()
-        self.alerts = Watchlist()
+        # Watchlist, keyword, and alerts are restored from the saved config so
+        # they persist across restarts; the company table is attached later.
+        self.settings: dict = {"max_age": None, "keyword": self.config.keyword}
+        self.watchlist = Watchlist(self.config.watchlist)
+        self.alerts = Watchlist(self.config.alerts)
         self.engine = NewsEngine(
             on_headline=self._on_headline,
             user_agent=self.config.user_agent,
@@ -301,10 +305,10 @@ class TelltapeApp(App[None]):
         """Add the application's actions to the built-in command palette."""
         yield from super().get_system_commands(screen)
         yield SystemCommand(
-            "Settings", "Edit contact, theme, and filters", self.action_settings
+            "Settings", "Edit contact, theme, and key bindings", self.action_settings
         )
         yield SystemCommand(
-            "Alerts", "Edit alert tickers, keywords, and sound", self.action_alerts
+            "Alerts", "Edit watchlist, highlight, alerts, and sound", self.action_alerts
         )
         yield SystemCommand(
             "Source catalog",
@@ -331,8 +335,6 @@ class TelltapeApp(App[None]):
             SettingsScreen(
                 contact_email=self.config.contact_email,
                 max_age=self.settings["max_age"],
-                filters=self.watchlist.terms,
-                keyword=self.settings["keyword"],
                 theme=self.config.theme,
                 vim_keys=self.config.vim_keys,
                 source_names=[s.name for s in self.sources],
@@ -344,6 +346,8 @@ class TelltapeApp(App[None]):
     def action_alerts(self) -> None:
         self.push_screen(
             AlertsScreen(
+                watchlist=self.watchlist.terms,
+                keyword=self.settings["keyword"],
                 alerts=self.alerts.terms,
                 alerts_sound=self.config.alerts_sound,
             ),
@@ -353,8 +357,14 @@ class TelltapeApp(App[None]):
     def _apply_alerts(self, result: dict | None) -> None:
         if result is None:
             return
+        self.watchlist.set_terms(result["watchlist"])
+        self.settings["keyword"] = result["keyword"]
         self.alerts.set_terms(result["alerts"])
         self.config.alerts_sound = result["alerts_sound"]
+        # Persist the watchlist, keyword, and alert terms across restarts.
+        self.config.watchlist = result["watchlist"]
+        self.config.keyword = result["keyword"]
+        self.config.alerts = result["alerts"]
         save_config(self.config)
         self.notify("Alerts updated")
 
@@ -380,8 +390,7 @@ class TelltapeApp(App[None]):
     def _apply_settings(self, result: dict | None) -> None:
         if result is None:
             return
-        self.settings = {"max_age": result["max_age"], "keyword": result["keyword"]}
-        self.watchlist.set_terms(result["filters"])
+        self.settings["max_age"] = result["max_age"]
         self.config.vim_keys = result["vim_keys"]
 
         if result["theme"] != self.config.theme:

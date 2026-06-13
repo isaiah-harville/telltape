@@ -1,4 +1,4 @@
-"""Settings dialog for the contact email, theme, and runtime filters."""
+"""Settings dialog for the contact email, theme, max age, and key bindings."""
 
 from __future__ import annotations
 
@@ -37,8 +37,6 @@ class SettingsScreen(ModalScreen[dict | None]):
         *,
         contact_email: str,
         max_age: float | None,
-        filters: list[str],
-        keyword: str,
         theme: str,
         vim_keys: bool,
         source_names: list[str],
@@ -47,8 +45,6 @@ class SettingsScreen(ModalScreen[dict | None]):
         super().__init__()
         self._contact_email = contact_email
         self._max_age = max_age
-        self._filters = filters
-        self._keyword = keyword
         self._theme = theme
         self._original_theme = theme
         self._vim_keys = vim_keys
@@ -79,16 +75,6 @@ class SettingsScreen(ModalScreen[dict | None]):
             )
             yield Label("Max age — hide items older than N seconds (blank = no limit)")
             yield Input(value=self._fmt_age(), id="max_age", placeholder="e.g. 600")
-            yield Label(
-                "Watchlist — tickers or company names, comma separated (blank = all)"
-            )
-            yield Input(
-                value=", ".join(self._filters),
-                id="filters",
-                placeholder="AAPL, Tesla, oil",
-            )
-            yield Label("Highlight keyword")
-            yield Input(value=self._keyword, id="keyword", placeholder="e.g. war")
             yield Checkbox(
                 "Vim keys — j/k/g/G and ctrl-d/ctrl-u to navigate",
                 value=self._vim_keys,
@@ -137,11 +123,6 @@ class SettingsScreen(ModalScreen[dict | None]):
             max_age = float(raw_age) if raw_age else None
         except ValueError:
             max_age = None
-        filters = [
-            t.strip()
-            for t in self.query_one("#filters", Input).value.split(",")
-            if t.strip()
-        ]
         key_bindings: dict[str, str] = {}
         for i in range(1, 10):
             val = self.query_one(f"#kb_{i}", Select).value
@@ -150,8 +131,6 @@ class SettingsScreen(ModalScreen[dict | None]):
         self.dismiss(
             {
                 "max_age": max_age,
-                "filters": filters,
-                "keyword": self.query_one("#keyword", Input).value.strip(),
                 "theme": str(self.query_one("#theme", Select).value),
                 "vim_keys": self.query_one("#vim_keys", Checkbox).value,
                 "key_bindings": key_bindings,

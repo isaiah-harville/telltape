@@ -30,6 +30,9 @@ class Config:
             headlines are treated as duplicates.
         vim_keys: Whether vim-style navigation (j/k/g/G, ctrl-d/ctrl-u) is
             enabled for the tape and source list.
+        watchlist: Tickers or company names the tape is filtered to (empty = all).
+        keyword: Term highlighted wherever it appears in the tape.
+        alerts: Tickers or keywords that trigger a notification.
     """
 
     contact_email: str = ""
@@ -37,6 +40,9 @@ class Config:
     alerts_sound: bool = True
     fuzzy_threshold: float = 88.0
     vim_keys: bool = False
+    watchlist: list[str] = field(default_factory=list)
+    keyword: str = ""
+    alerts: list[str] = field(default_factory=list)
     key_bindings: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -79,6 +85,12 @@ def load_config() -> tuple[Config, str | None]:
         config.fuzzy_threshold = float(data["fuzzy_threshold"])
     if isinstance(data.get("vim_keys"), bool):
         config.vim_keys = data["vim_keys"]
+    if isinstance(data.get("watchlist"), list):
+        config.watchlist = [t for t in data["watchlist"] if isinstance(t, str)]
+    if isinstance(data.get("keyword"), str):
+        config.keyword = data["keyword"]
+    if isinstance(data.get("alerts"), list):
+        config.alerts = [t for t in data["alerts"] if isinstance(t, str)]
     if isinstance(data.get("key_bindings"), dict):
         config.key_bindings = {
             str(k): v for k, v in data["key_bindings"].items() if isinstance(v, str)
@@ -97,6 +109,11 @@ def save_config(config: Config) -> None:
     path.write_text(_render_toml(config))
 
 
+def _toml_str_array(values: list[str]) -> str:
+    """Render a list of strings as a single-line TOML array."""
+    return "[" + ", ".join(quote(v) for v in values) + "]"
+
+
 def _render_toml(config: Config) -> str:
     """Render settings as a TOML document."""
     lines = [
@@ -106,6 +123,9 @@ def _render_toml(config: Config) -> str:
         f"alerts_sound = {'true' if config.alerts_sound else 'false'}",
         f"fuzzy_threshold = {config.fuzzy_threshold}",
         f"vim_keys = {'true' if config.vim_keys else 'false'}",
+        f"keyword = {quote(config.keyword)}",
+        f"watchlist = {_toml_str_array(config.watchlist)}",
+        f"alerts = {_toml_str_array(config.alerts)}",
     ]
     if config.key_bindings:
         lines.append("\n[key_bindings]")

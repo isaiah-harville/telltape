@@ -95,6 +95,42 @@ async def test_poll_once_enqueues_new_entries():
     await poller.aclose()
 
 
+async def test_poll_once_emits_oldest_first():
+    # Feed lists newest-first; the poller must enqueue oldest-first so the tape
+    # reads chronologically.
+    body = _rss(
+        _item("Newest", "https://x/3", date="Tue, 10 Jun 2025 12:00:00 GMT"),
+        _item("Middle", "https://x/2", date="Tue, 10 Jun 2025 11:00:00 GMT"),
+        _item("Oldest", "https://x/1", date="Tue, 10 Jun 2025 10:00:00 GMT"),
+    )
+
+    def handler(request):
+        return httpx.Response(200, text=body)
+
+    poller, queue = _poller_with(handler)
+    await poller._poll_once(FeedSource("Test", "https://feed/rss"))
+    order = [queue.get_nowait().title for _ in range(3)]
+    assert order == ["Oldest", "Middle", "Newest"]
+    await poller.aclose()
+
+
+async def test_poll_once_places_undated_entries_last():
+    body = _rss(
+        _item("Dated", "https://x/1", date="Tue, 10 Jun 2025 10:00:00 GMT"),
+        _item("Undated", "https://x/2", date=""),
+    )
+
+    def handler(request):
+        return httpx.Response(200, text=body)
+
+    poller, queue = _poller_with(handler)
+    await poller._poll_once(FeedSource("Test", "https://feed/rss"))
+    order = [queue.get_nowait().title for _ in range(2)]
+    # Undated items are treated as current and sorted to the end (bottom of tape).
+    assert order == ["Dated", "Undated"]
+    await poller.aclose()
+
+
 async def test_poll_once_sends_conditional_headers_and_handles_304():
     seen = {}
 

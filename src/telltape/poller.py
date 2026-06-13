@@ -153,10 +153,18 @@ class FeedPoller:
 
         parsed = feedparser.parse(resp.content)
         fetched = time.time()
-        for entry in parsed.entries:
-            headline = self._to_headline(src, entry, fetched)
-            if headline is not None:
-                await self.queue.put(headline)
+        headlines = [
+            headline
+            for entry in parsed.entries
+            if (headline := self._to_headline(src, entry, fetched)) is not None
+        ]
+        # Feeds list entries newest-first (and the order is not guaranteed), but
+        # the tape is a chronological stream. Emit oldest-first so the newest of
+        # a batch lands at the bottom. Entries without a timestamp are treated as
+        # current and placed last.
+        headlines.sort(key=lambda h: (h.ts_published is None, h.ts_published or 0.0))
+        for headline in headlines:
+            await self.queue.put(headline)
 
     @staticmethod
     def _to_headline(src: FeedSource, entry, fetched: float) -> Headline | None:

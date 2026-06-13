@@ -110,12 +110,39 @@ async def test_open_alerts_and_save(app):
         await pilot.press("a")
         await pilot.pause()
         assert isinstance(app.screen, AlertsScreen)
+        app.screen.query_one("#watchlist", Input).value = "Tesla"
+        app.screen.query_one("#keyword", Input).value = "war"
         app.screen.query_one("#alerts", Input).value = "AAPL, war"
         app.screen.query_one("#alerts_sound", Checkbox).value = False
-        await pilot.click("#save")
+        app.screen.query_one("#save", Button).press()
         await pilot.pause()
         assert app.alerts.terms == ["AAPL", "war"]
+        assert app.watchlist.terms == ["Tesla"]
+        assert app.settings["keyword"] == "war"
         assert app.config.alerts_sound is False
+
+
+async def test_alert_config_persists_across_restart(app):
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("a")
+        await pilot.pause()
+        app.screen.query_one("#watchlist", Input).value = "Tesla, oil"
+        app.screen.query_one("#keyword", Input).value = "war"
+        app.screen.query_one("#alerts", Input).value = "AAPL, recall"
+        app.screen.query_one("#save", Button).press()
+        await pilot.pause()
+
+    # A fresh app instance reads the same on-disk config (same tmp app dir).
+    from telltape.tui.app import TelltapeApp
+
+    restarted = TelltapeApp(sources=app.sources)
+    assert restarted.config.watchlist == ["Tesla", "oil"]
+    assert restarted.config.keyword == "war"
+    assert restarted.config.alerts == ["AAPL", "recall"]
+    assert restarted.watchlist.terms == ["Tesla", "oil"]
+    assert restarted.alerts.terms == ["AAPL", "recall"]
+    assert restarted.settings["keyword"] == "war"
 
 
 async def test_open_settings_and_save(app):
@@ -124,12 +151,10 @@ async def test_open_settings_and_save(app):
         await pilot.press("s")
         await pilot.pause()
         assert isinstance(app.screen, SettingsScreen)
-        app.screen.query_one("#keyword", Input).value = "war"
         app.screen.query_one("#vim_keys", Checkbox).value = True
         # Save sits below the fold in a small viewport; press it directly.
         app.screen.query_one("#save", Button).press()
         await pilot.pause()
-        assert app.settings["keyword"] == "war"
         assert app.config.vim_keys is True
 
 
