@@ -305,6 +305,38 @@ async def test_tape_hides_items_past_max_age(app):
         assert "Stale" not in joined
 
 
+async def test_scrolling_up_freezes_repaint(app):
+    async with app.run_test(size=(80, 10)) as pilot:
+        await pilot.pause()
+        now = time.time()
+        # Enough lines to overflow the small viewport so scrolling is possible.
+        for i in range(30):
+            app._on_headline(
+                make_headline(
+                    f"Item{i:02d}", ts_published=now - (30 - i) * 60, url=f"u{i}"
+                )
+            )
+        await pilot.pause()
+        tape = app._tape
+
+        tape.scroll_to(y=0, animate=False)  # scroll up to read history
+        await pilot.pause()
+        assert not tape.is_vertical_scroll_end
+        before = _tape_texts(app)
+
+        app._on_headline(make_headline("BRANDNEW", ts_published=now, url="unew"))
+        await pilot.pause()
+        # Frozen: the tape was not repainted while scrolled up.
+        assert _tape_texts(app) == before
+        assert "BRANDNEW" not in "\n".join(_tape_texts(app))
+
+        tape.scroll_end(animate=False)  # back to the bottom
+        await pilot.pause()
+        app._repaint()
+        await pilot.pause()
+        assert "BRANDNEW" in "\n".join(_tape_texts(app))
+
+
 async def test_clear_tape_empties_buffer(app):
     async with app.run_test() as pilot:
         await pilot.pause()

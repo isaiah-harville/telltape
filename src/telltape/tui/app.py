@@ -341,8 +341,15 @@ class TelltapeApp(App[None]):
         cleared and rewritten oldest-first, so the freshest item sits at the
         bottom; items past ``max_age`` (and the oldest beyond the line cap) are
         dropped from view.
+
+        While the user has scrolled up to read history, repainting is skipped so
+        the rewrite does not snap them back to the bottom; it resumes once they
+        return to the end. New arrivals are still buffered (and alerts still
+        fire) in the meantime.
         """
         if self._tape is None or self.paused:
+            return
+        if not self._tape.is_vertical_scroll_end:
             return
         now = time.time()
         max_age = self.settings["max_age"]
