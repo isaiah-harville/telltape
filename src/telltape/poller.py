@@ -203,7 +203,11 @@ class FeedPoller:
 
         ts_published: float | None = None
         for key in ("published_parsed", "updated_parsed"):
-            parsed_time = entry.get(key)
+            # Read raw keys via ``dict.get`` rather than ``entry.get``: feedparser
+            # otherwise applies a deprecated alias mapping ``updated_parsed`` to
+            # ``published_parsed``, which warns whenever a feed carries a blank or
+            # unparseable date.
+            parsed_time = dict.get(entry, key)
             if parsed_time:
                 # feedparser normalizes parsed times to a UTC struct_time.
                 ts_published = float(calendar.timegm(parsed_time))
