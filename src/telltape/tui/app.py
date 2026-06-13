@@ -202,6 +202,10 @@ class TelltapeApp(App[None]):
     def on_selection_list_selected_changed(
         self, event: SelectionList.SelectedChanged
     ) -> None:
+        # Only the side panel drives the engine; the catalog's own lists, which
+        # bubble the same event, are applied as a set when that dialog closes.
+        if event.selection_list.id != "sources":
+            return
         selected = set(event.selection_list.selected)
         active = self.engine.active_names
         for name in selected - active:

@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from .paths import config_file
 from .tomlio import quote
 
-DEFAULT_THEME = "nord"
+DEFAULT_THEME = "tokyo-night"
 _UA_VERSION = "0.1"
 
 
