@@ -215,6 +215,43 @@ class TelltapeApp(App[None]):
             if source_name and source_name in self._by_name:
                 self.query_one("#sources", SelectionList).toggle(source_name)
                 event.stop()
+            return
+        if self.config.vim_keys and self._handle_vim_key(event.key):
+            event.stop()
+
+    def _handle_vim_key(self, key: str) -> bool:
+        """Route a vim navigation key to the focused pane.
+
+        When the source list has focus, j/k/g/G move its cursor; otherwise the
+        keys (plus ctrl-d/ctrl-u) scroll the tape. Returns whether the key was
+        handled.
+        """
+        sources = self.query_one("#sources", SelectionList)
+        if self.focused is sources:
+            action = {
+                "j": sources.action_cursor_down,
+                "k": sources.action_cursor_up,
+                "g": sources.action_first,
+                "G": sources.action_last,
+            }.get(key)
+            if action is None:
+                return False
+            action()
+            return True
+        if self._tape is None:
+            return False
+        action = {
+            "j": self._tape.scroll_down,
+            "k": self._tape.scroll_up,
+            "g": self._tape.scroll_home,
+            "G": self._tape.scroll_end,
+            "ctrl+d": self._tape.scroll_page_down,
+            "ctrl+u": self._tape.scroll_page_up,
+        }.get(key)
+        if action is None:
+            return False
+        action()
+        return True
 
     # --- headline sink ----------------------------------------------------
 
@@ -270,6 +307,7 @@ class TelltapeApp(App[None]):
                 alerts=self.alerts.terms,
                 alerts_sound=self.config.alerts_sound,
                 theme=self.config.theme,
+                vim_keys=self.config.vim_keys,
                 source_names=[s.name for s in self.sources],
                 key_bindings=dict(self.config.key_bindings),
             ),
@@ -283,6 +321,7 @@ class TelltapeApp(App[None]):
         self.watchlist.set_terms(result["filters"])
         self.alerts.set_terms(result["alerts"])
         self.config.alerts_sound = result["alerts_sound"]
+        self.config.vim_keys = result["vim_keys"]
 
         if result["theme"] != self.config.theme:
             self.config.theme = result["theme"]
