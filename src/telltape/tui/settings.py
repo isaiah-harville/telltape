@@ -25,8 +25,6 @@ class SettingsScreen(ModalScreen[dict | None]):
         max_age: float | None,
         filters: list[str],
         keyword: str,
-        alerts: list[str],
-        alerts_sound: bool,
         theme: str,
         vim_keys: bool,
         source_names: list[str],
@@ -37,8 +35,6 @@ class SettingsScreen(ModalScreen[dict | None]):
         self._max_age = max_age
         self._filters = filters
         self._keyword = keyword
-        self._alerts = alerts
-        self._alerts_sound = alerts_sound
         self._theme = theme
         self._original_theme = theme
         self._vim_keys = vim_keys
@@ -74,15 +70,6 @@ class SettingsScreen(ModalScreen[dict | None]):
             )
             yield Label("Highlight keyword")
             yield Input(value=self._keyword, id="keyword", placeholder="e.g. war")
-            yield Label("Alerts — notify on these tickers or keywords, comma separated")
-            yield Input(
-                value=", ".join(self._alerts),
-                id="alerts",
-                placeholder="AAPL, recall, bankruptcy",
-            )
-            yield Checkbox(
-                "Play sound on alerts", value=self._alerts_sound, id="alerts_sound"
-            )
             yield Checkbox(
                 "Vim keys — j/k/g/G and ctrl-d/ctrl-u to navigate",
                 value=self._vim_keys,
@@ -130,11 +117,6 @@ class SettingsScreen(ModalScreen[dict | None]):
             for t in self.query_one("#filters", Input).value.split(",")
             if t.strip()
         ]
-        alerts = [
-            t.strip()
-            for t in self.query_one("#alerts", Input).value.split(",")
-            if t.strip()
-        ]
         key_bindings: dict[str, str] = {}
         for i in range(1, 10):
             val = self.query_one(f"#kb_{i}", Select).value
@@ -146,8 +128,6 @@ class SettingsScreen(ModalScreen[dict | None]):
                 "max_age": max_age,
                 "filters": filters,
                 "keyword": self.query_one("#keyword", Input).value.strip(),
-                "alerts": alerts,
-                "alerts_sound": self.query_one("#alerts_sound", Checkbox).value,
                 "theme": str(self.query_one("#theme", Select).value),
                 "vim_keys": self.query_one("#vim_keys", Checkbox).value,
                 "key_bindings": key_bindings,

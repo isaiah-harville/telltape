@@ -23,6 +23,7 @@ from ..feeds import load_feeds
 from ..models import FeedSource, Headline
 from ..render import format_headline
 from ..watchlist import Watchlist
+from .alerts import AlertsScreen
 from .catalog import SourceCatalogScreen
 from .contact import ContactScreen
 from .quit import QuitScreen
@@ -50,24 +51,25 @@ class TelltapeApp(App[None]):
     #sources { width: 38; border: round $accent; padding: 0 1; }
     #tape { border: round $accent; padding: 0 1; }
 
-    SettingsScreen, ContactScreen, QuitScreen { align: center middle; }
-    #settings-box, #contact-box, #quit-box {
+    SettingsScreen, ContactScreen, QuitScreen, AlertsScreen { align: center middle; }
+    #settings-box, #contact-box, #quit-box, #alerts-box {
         width: 72; max-width: 95%; height: auto; max-height: 95%;
         overflow-y: auto; padding: 1 2;
         border: thick $accent; background: $surface;
     }
     #quit-box { width: 48; }
-    #settings-title, #contact-title, #quit-title {
+    #settings-title, #contact-title, #quit-title, #alerts-title {
         text-style: bold; width: 1fr; text-align: center;
     }
-    #settings-box Label, #contact-box Label, #quit-box Label {
+    #settings-box Label, #contact-box Label, #quit-box Label, #alerts-box Label {
         margin-top: 1; color: $text-muted;
     }
     #contact-error { color: $error; }
-    #settings-buttons, #contact-buttons, #quit-buttons {
+    #settings-buttons, #contact-buttons, #quit-buttons, #alerts-buttons {
         height: auto; margin-top: 1; align-horizontal: right;
     }
-    #settings-buttons Button, #contact-buttons Button, #quit-buttons Button {
+    #settings-buttons Button, #contact-buttons Button, #quit-buttons Button,
+    #alerts-buttons Button {
         margin-left: 2;
     }
     .kb-row { height: 3; margin-top: 0; }
@@ -92,6 +94,7 @@ class TelltapeApp(App[None]):
     BINDINGS = [
         ("s", "settings", "Settings"),
         ("b", "browse_sources", "Catalog"),
+        ("l", "alerts", "Alerts"),
         ("t", "toggle_pause", "Pause"),
         ("c", "clear_tape", "Clear"),
         ("a", "all_sources", "All on"),
@@ -280,7 +283,10 @@ class TelltapeApp(App[None]):
         """Add the application's actions to the built-in command palette."""
         yield from super().get_system_commands(screen)
         yield SystemCommand(
-            "Settings", "Edit contact, theme, filters, and alerts", self.action_settings
+            "Settings", "Edit contact, theme, and filters", self.action_settings
+        )
+        yield SystemCommand(
+            "Alerts", "Edit alert tickers, keywords, and sound", self.action_alerts
         )
         yield SystemCommand(
             "Source catalog",
@@ -309,8 +315,6 @@ class TelltapeApp(App[None]):
                 max_age=self.settings["max_age"],
                 filters=self.watchlist.terms,
                 keyword=self.settings["keyword"],
-                alerts=self.alerts.terms,
-                alerts_sound=self.config.alerts_sound,
                 theme=self.config.theme,
                 vim_keys=self.config.vim_keys,
                 source_names=[s.name for s in self.sources],
@@ -318,6 +322,23 @@ class TelltapeApp(App[None]):
             ),
             self._apply_settings,
         )
+
+    def action_alerts(self) -> None:
+        self.push_screen(
+            AlertsScreen(
+                alerts=self.alerts.terms,
+                alerts_sound=self.config.alerts_sound,
+            ),
+            self._apply_alerts,
+        )
+
+    def _apply_alerts(self, result: dict | None) -> None:
+        if result is None:
+            return
+        self.alerts.set_terms(result["alerts"])
+        self.config.alerts_sound = result["alerts_sound"]
+        save_config(self.config)
+        self.notify("Alerts updated")
 
     def action_browse_sources(self) -> None:
         sl = self.query_one("#sources", SelectionList)
@@ -343,8 +364,6 @@ class TelltapeApp(App[None]):
             return
         self.settings = {"max_age": result["max_age"], "keyword": result["keyword"]}
         self.watchlist.set_terms(result["filters"])
-        self.alerts.set_terms(result["alerts"])
-        self.config.alerts_sound = result["alerts_sound"]
         self.config.vim_keys = result["vim_keys"]
 
         if result["theme"] != self.config.theme:
