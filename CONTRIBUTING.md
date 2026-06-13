@@ -22,41 +22,6 @@ binary the way releases do, also install the `build` group:
 uv sync --group build
 ```
 
-## Project layout
-
-```
-src/telltape/
-├── cli.py         # Click entry point — launches the TUI
-├── engine.py      # Orchestrates pollers → dedup → the headline sink
-├── poller.py      # Per-source polling with conditional GET
-├── feeds.py       # Built-in feed sources and feeds.toml read/write
-├── dedup.py       # Fuzzy de-duplication of cross-posted stories
-├── models.py      # Core types: FeedSource, Headline
-├── render.py      # Headline → Rich Text for the tape
-├── watchlist.py   # Ticker / company-name matching
-├── companies.py   # SEC company-ticker table
-├── config.py      # User settings and config.toml
-├── paths.py       # Locations under ~/.telltape
-├── tomlio.py      # Small TOML-writing helper
-└── tui/           # Textual UI: app, settings, contact, quit screens
-
-packaging/         # Nuitka entry point + macOS .app/notarization assets
-.github/workflows/ # python.yml (lint + typecheck), release.yml (build/sign/publish)
-```
-
-## Before you open a PR
-
-Run the same checks CI runs:
-
-```bash
-uv run ruff check .      # lint
-uv run ruff format .     # format (or `--check` to verify only)
-uv run ty check          # type check
-```
-
-There is no automated test suite yet. If you change behavior, please add tests
-(pytest is the intended runner) and describe how you verified the change.
-
 ## Code style
 
 Match the surrounding code:
@@ -67,6 +32,7 @@ Match the surrounding code:
 
 ## Commits & pull requests
 
+- Preferrably install the pre-commit config
 - Keep PRs focused; one logical change per PR.
 - Write clear commit messages (imperative mood, e.g. "Add EDGAR S-1 feed").
 - Reference any related issue, and note how you tested.
