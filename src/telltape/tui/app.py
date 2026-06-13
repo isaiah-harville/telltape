@@ -283,6 +283,11 @@ class TelltapeApp(App[None]):
             "Settings", "Edit contact, theme, filters, and alerts", self.action_settings
         )
         yield SystemCommand(
+            "Source catalog",
+            "Browse and toggle every source by group",
+            self.action_browse_sources,
+        )
+        yield SystemCommand(
             "Resume tape" if self.paused else "Pause tape",
             "Pause or resume the live tape",
             self.action_toggle_pause,
@@ -313,6 +318,25 @@ class TelltapeApp(App[None]):
             ),
             self._apply_settings,
         )
+
+    def action_browse_sources(self) -> None:
+        sl = self.query_one("#sources", SelectionList)
+        self.push_screen(
+            SourceCatalogScreen(sources=self.sources, enabled=set(sl.selected)),
+            self._apply_catalog,
+        )
+
+    def _apply_catalog(self, enabled: set[str] | None) -> None:
+        """Sync the side panel to the catalog's enabled set, driving the engine."""
+        if enabled is None:
+            return
+        sl = self.query_one("#sources", SelectionList)
+        current = set(sl.selected)
+        for name in self._by_name:
+            if name in enabled and name not in current:
+                sl.select(name)
+            elif name not in enabled and name in current:
+                sl.deselect(name)
 
     def _apply_settings(self, result: dict | None) -> None:
         if result is None:

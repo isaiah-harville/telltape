@@ -87,9 +87,7 @@ class SourceCatalogScreen(ModalScreen[set[str] | None]):
                 continue
             container.mount(Label(group, classes="catalog-group"))
             options = [
-                Selection(
-                    f"{s.name}  ·  {s.category}", s.name, s.name in self._enabled
-                )
+                Selection(f"{s.name}  ·  {s.category}", s.name, s.name in self._enabled)
                 for s in members
             ]
             container.mount(SelectionList(*options, classes="catalog-section"))
@@ -107,9 +105,7 @@ class SourceCatalogScreen(ModalScreen[set[str] | None]):
     def _harvest(self) -> None:
         """Fold the currently visible selections back into the enabled set."""
         for sl in self.query(SelectionList):
-            visible = {
-                sl.get_option_at_index(i).value for i in range(sl.option_count)
-            }
+            visible = {sl.get_option_at_index(i).value for i in range(sl.option_count)}
             self._enabled -= visible
             self._enabled |= set(sl.selected)
 
