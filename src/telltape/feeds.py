@@ -50,7 +50,9 @@ DEFAULT_FEEDS: list[FeedSource] = [
     FeedSource(
         "Yahoo Finance", "https://finance.yahoo.com/news/rssindex", group="Wires"
     ),
-    FeedSource("Investing.com", "https://www.investing.com/rss/news.rss", group="Wires"),
+    FeedSource(
+        "Investing.com", "https://www.investing.com/rss/news.rss", group="Wires"
+    ),
     FeedSource("Seeking Alpha", "https://seekingalpha.com/feed.xml", group="Wires"),
     FeedSource("Benzinga", "https://www.benzinga.com/feed", group="Wires"),
     FeedSource(

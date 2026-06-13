@@ -23,6 +23,7 @@ from ..feeds import load_feeds
 from ..models import FeedSource, Headline
 from ..render import format_headline
 from ..watchlist import Watchlist
+from .catalog import SourceCatalogScreen
 from .contact import ContactScreen
 from .quit import QuitScreen
 from .settings import SettingsScreen
@@ -72,11 +73,25 @@ class TelltapeApp(App[None]):
     .kb-row { height: 3; margin-top: 0; }
     .kb-key { width: 3; content-align: right middle; padding-right: 1; color: $text-muted; }
     .kb-row Select { width: 1fr; }
+
+    SourceCatalogScreen { align: center middle; }
+    #catalog-box {
+        width: 90; max-width: 95%; height: 90%; max-height: 95%;
+        padding: 1 2; border: thick $accent; background: $surface;
+    }
+    #catalog-title { text-style: bold; width: 1fr; text-align: center; }
+    #catalog-hint { color: $text-muted; margin-bottom: 1; }
+    #catalog-list { height: 1fr; }
+    .catalog-group { text-style: bold; color: $accent; margin-top: 1; }
+    .catalog-section { height: auto; border: none; padding: 0; }
+    #catalog-buttons { height: auto; margin-top: 1; align-horizontal: right; }
+    #catalog-buttons Button { margin-left: 2; }
     """
     TITLE = "telltape"
     SUB_TITLE = "live tape"
     BINDINGS = [
         ("s", "settings", "Settings"),
+        ("b", "browse_sources", "Catalog"),
         ("t", "toggle_pause", "Pause"),
         ("c", "clear_tape", "Clear"),
         ("a", "all_sources", "All on"),
