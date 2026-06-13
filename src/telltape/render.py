@@ -15,15 +15,26 @@ _DEFAULT_STYLE = "cyan"
 
 
 def _age_str(headline: Headline) -> str:
-    """Return a fixed-width, human-readable age for a headline."""
+    """Return a fixed-width (7-character) human-readable age for a headline.
+
+    The unit scales with magnitude so the field never outgrows its column:
+    seconds, then whole minutes, then hours+minutes (``4h05m``), then days+hours
+    (``3d04h``), and finally days alone for anything older.
+    """
     age = headline.age
     if age is None:
-        return "  --  "
+        return f"{'--':^6} "
     if age < 60:
-        return f"{age:4.0f}s "
+        return f"{age:5.0f}s "
     if age < 3600:
-        return f"{age / 60:4.0f}m "
-    return f"{age / 3600:4.0f}h "
+        return f"{age / 60:5.0f}m "
+    if age < 86_400:  # under a day
+        hours, rem = divmod(int(age), 3600)
+        return f"{hours}h{rem // 60:02d}m".rjust(6) + " "
+    if age < 8_640_000:  # under 100 days
+        days, rem = divmod(int(age), 86_400)
+        return f"{days}d{rem // 3600:02d}h".rjust(6) + " "
+    return f"{int(age // 86_400)}d".rjust(6) + " "
 
 
 def format_headline(

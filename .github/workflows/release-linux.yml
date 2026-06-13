@@ -1,0 +1,74 @@
+name: release-linux
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      NUITKA_CACHE_DIR: ${{ github.workspace }}/.cache/nuitka
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
+      CCACHE_COMPILERCHECK: content
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Prepare release build cache
+        run: mkdir -p "$NUITKA_CACHE_DIR" "$CCACHE_DIR"
+
+      - name: Restore release build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nuitka
+            .cache/ccache
+          key: release-${{ matrix.target }}-${{ hashFiles('uv.lock', 'pyproject.toml', 'packaging/**', 'src/**/*.py') }}
+          restore-keys: |
+            release-${{ matrix.target }}-
+
+      - run: uv sync --frozen --group build
+
+      - name: Install build deps
+        run: sudo apt-get update && sudo apt-get install -y patchelf ccache
+
+      - name: Build binary
+        run: |
+          uv run python -m nuitka \
+            --onefile \
+            --assume-yes-for-downloads \
+            --output-dir=dist \
+            --output-filename=telltape \
+            --include-package=telltape \
+            --include-package=textual \
+            --include-package=feedparser \
+            --include-package=rapidfuzz \
+            --include-package-data=textual \
+            --include-package-data=certifi \
+            --include-distribution-metadata=telltape \
+            packaging/entry.py
+
+      - name: Stage asset
+        run: |
+          mkdir -p out
+          cp dist/telltape out/telltape-${{ matrix.target }}
+
+      - name: Upload release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: out/*
+          if-no-files-found: error

@@ -32,6 +32,8 @@ class FeedSource:
         name: Human-readable label shown in the UI and used as a key.
         url: Feed URL to fetch.
         category: One of ``NEWS``, ``WORLD``, or ``FILING``.
+        group: Free-form label used to organize sources in the catalog screen,
+            such as "Wires" or "Crypto". Purely cosmetic; the engine ignores it.
         interval: Minimum seconds between polls for this source.
         default_on: Whether the source starts enabled in the UI. High-volume
             feeds default to ``False`` so they do not flood the tape.
@@ -41,7 +43,8 @@ class FeedSource:
     name: str
     url: str
     category: str = NEWS
-    interval: float = 15.0
+    group: str = ""
+    interval: float = 8.0
     default_on: bool = True
     headers: dict[str, str] = field(default_factory=dict)
 

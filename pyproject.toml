@@ -1,6 +1,6 @@
 [project]
 name = "telltape"
-version = "0.1.0"
+version = "0.2.0"
 description = "Market-moving financial and world news headlines in your terminal."
 authors = [
     { name = "Isaiah Harville", email = "isaiah@harville.dev" }
@@ -20,8 +20,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff", "ty", "pre-commit"]
-build = ["nuitka>=2.0"]
+dev = [
+    "ruff",
+    "ty",
+    "pre-commit",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+]
+build = ["nuitka[onefile]>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/isaiah-harville/telltape"
@@ -33,3 +39,8 @@ telltape = "telltape:main"
 [build-system]
 requires = ["uv_build>=0.11.8,<0.12.0"]
 build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

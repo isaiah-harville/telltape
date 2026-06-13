@@ -27,61 +27,181 @@ _EDGAR_BASE = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&owner=
 DEFAULT_FEEDS: list[FeedSource] = [
     # ---- Financial wires (fast, structured) -----------------------------
     FeedSource(
-        "CNBC Top News", "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+        "CNBC Top News",
+        "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+        group="Wires",
     ),
-    FeedSource("CNBC Markets", "https://www.cnbc.com/id/20910258/device/rss/rss.html"),
     FeedSource(
-        "MarketWatch Top", "http://feeds.marketwatch.com/marketwatch/topstories/"
+        "CNBC Markets",
+        "https://www.cnbc.com/id/20910258/device/rss/rss.html",
+        group="Wires",
+    ),
+    FeedSource(
+        "MarketWatch Top",
+        "http://feeds.marketwatch.com/marketwatch/topstories/",
+        group="Wires",
     ),
     FeedSource(
         "MarketWatch RealTime",
         "http://feeds.marketwatch.com/marketwatch/realtimeheadlines/",
+        group="Wires",
         interval=10.0,
     ),
-    FeedSource("Yahoo Finance", "https://finance.yahoo.com/news/rssindex"),
-    FeedSource("Investing.com", "https://www.investing.com/rss/news.rss"),
-    FeedSource("Seeking Alpha", "https://seekingalpha.com/feed.xml"),
+    FeedSource(
+        "Yahoo Finance", "https://finance.yahoo.com/news/rssindex", group="Wires"
+    ),
+    FeedSource(
+        "Investing.com", "https://www.investing.com/rss/news.rss", group="Wires"
+    ),
+    FeedSource("Seeking Alpha", "https://seekingalpha.com/feed.xml", group="Wires"),
+    FeedSource("Benzinga", "https://www.benzinga.com/feed", group="Wires"),
+    FeedSource(
+        "ZeroHedge",
+        "https://feeds.feedburner.com/zerohedge/feed",
+        group="Wires",
+        default_on=False,
+    ),
     # Press-release wires — companies breaking their own news (high volume).
     FeedSource(
         "PR Newswire",
         "https://www.prnewswire.com/rss/news-releases-list.rss",
+        group="Press Releases",
         default_on=False,
     ),
     FeedSource(
         "GlobeNewswire",
         "https://www.globenewswire.com/RssFeed/orgclass/1/feedTitle/GlobeNewswire%20-%20News%20Room",
+        group="Press Releases",
+        default_on=False,
+    ),
+    # ---- Macro & central banks ------------------------------------------
+    FeedSource(
+        "Fed Press",
+        "https://www.federalreserve.gov/feeds/press_all.xml",
+        group="Macro & Policy",
+        interval=60.0,
+    ),
+    FeedSource(
+        "Fed Monetary Policy",
+        "https://www.federalreserve.gov/feeds/press_monetary.xml",
+        group="Macro & Policy",
+        interval=60.0,
+    ),
+    FeedSource(
+        "ECB Press",
+        "https://www.ecb.europa.eu/rss/press.html",
+        group="Macro & Policy",
+        interval=60.0,
+        default_on=False,
+    ),
+    # ---- Crypto ----------------------------------------------------------
+    FeedSource(
+        "CoinDesk",
+        "https://www.coindesk.com/arc/outboundfeeds/rss",
+        group="Crypto",
+        default_on=False,
+    ),
+    FeedSource(
+        "Cointelegraph",
+        "https://cointelegraph.com/rss",
+        group="Crypto",
+        default_on=False,
+    ),
+    # ---- Commodities & energy -------------------------------------------
+    FeedSource(
+        "OilPrice.com",
+        "https://oilprice.com/rss/main",
+        group="Commodities",
         default_on=False,
     ),
     # ---- World / general news that moves markets ------------------------
     FeedSource(
-        "BBC World", "https://feeds.bbci.co.uk/news/world/rss.xml", category=WORLD
+        "BBC World",
+        "https://feeds.bbci.co.uk/news/world/rss.xml",
+        category=WORLD,
+        group="World",
     ),
     FeedSource(
-        "BBC Business", "https://feeds.bbci.co.uk/news/business/rss.xml", category=WORLD
+        "BBC Business",
+        "https://feeds.bbci.co.uk/news/business/rss.xml",
+        category=WORLD,
+        group="World",
     ),
     FeedSource(
-        "Al Jazeera", "https://www.aljazeera.com/xml/rss/all.xml", category=WORLD
+        "Al Jazeera",
+        "https://www.aljazeera.com/xml/rss/all.xml",
+        category=WORLD,
+        group="World",
     ),
     FeedSource(
-        "Guardian World", "https://www.theguardian.com/world/rss", category=WORLD
+        "Guardian World",
+        "https://www.theguardian.com/world/rss",
+        category=WORLD,
+        group="World",
     ),
     FeedSource(
         "NYT World",
         "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
         category=WORLD,
+        group="World",
     ),
     FeedSource(
         "NYT Business",
         "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
         category=WORLD,
+        group="World",
     ),
-    FeedSource("NPR News", "https://feeds.npr.org/1001/rss.xml", category=WORLD),
+    FeedSource(
+        "NPR News",
+        "https://feeds.npr.org/1001/rss.xml",
+        category=WORLD,
+        group="World",
+    ),
     # ---- SEC EDGAR real-time filings ------------------------------------
-    FeedSource("EDGAR 8-K", f"{_EDGAR_BASE}&type=8-K", category=FILING, interval=20.0),
+    FeedSource(
+        "EDGAR 8-K",
+        f"{_EDGAR_BASE}&type=8-K",
+        category=FILING,
+        group="SEC Filings",
+        interval=20.0,
+    ),
+    FeedSource(
+        "EDGAR Form 4",
+        f"{_EDGAR_BASE}&type=4",
+        category=FILING,
+        group="SEC Filings",
+        interval=20.0,
+        default_on=False,
+    ),
+    FeedSource(
+        "EDGAR SC 13D",
+        f"{_EDGAR_BASE}&type=SC 13D",
+        category=FILING,
+        group="SEC Filings",
+        interval=30.0,
+        default_on=False,
+    ),
+    FeedSource(
+        "EDGAR S-1",
+        f"{_EDGAR_BASE}&type=S-1",
+        category=FILING,
+        group="SEC Filings",
+        interval=30.0,
+        default_on=False,
+    ),
+    FeedSource(
+        "EDGAR 13F-HR",
+        f"{_EDGAR_BASE}&type=13F-HR",
+        category=FILING,
+        group="SEC Filings",
+        interval=60.0,
+        default_on=False,
+    ),
     FeedSource(
         "EDGAR All",
         f"{_EDGAR_BASE}&type=",
         category=FILING,
+        group="SEC Filings",
         interval=30.0,
         default_on=False,
     ),
@@ -147,6 +267,7 @@ def _parse(data: dict) -> list[FeedSource]:
         category = str(row.get("category", NEWS))
         if category not in _CATEGORIES:
             category = NEWS
+        group = str(row.get("group", "")).strip()
         try:
             interval = float(row.get("interval", 15.0))
         except (TypeError, ValueError):
@@ -157,6 +278,7 @@ def _parse(data: dict) -> list[FeedSource]:
                 name=name,
                 url=url,
                 category=category,
+                group=group,
                 interval=interval,
                 default_on=bool(row.get("default_on", True)),
                 headers=headers,
@@ -171,6 +293,7 @@ def _render_toml(feeds: list[FeedSource]) -> str:
         "# telltape feeds configuration",
         "# Edit this file to add, remove, or reorder sources, then restart.",
         "# category must be one of: news | world | filing",
+        "# group is a free-form label used to organize the source catalog.",
         "",
     ]
     for feed in feeds:
@@ -178,6 +301,8 @@ def _render_toml(feeds: list[FeedSource]) -> str:
         lines.append(f"name = {quote(feed.name)}")
         lines.append(f"url = {quote(feed.url)}")
         lines.append(f"category = {quote(feed.category)}")
+        if feed.group:
+            lines.append(f"group = {quote(feed.group)}")
         lines.append(f"interval = {feed.interval}")
         lines.append(f"default_on = {'true' if feed.default_on else 'false'}")
         if feed.headers:

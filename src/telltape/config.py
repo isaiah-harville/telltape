@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from .paths import config_file
 from .tomlio import quote
 
-DEFAULT_THEME = "nord"
+DEFAULT_THEME = "tokyo-night"
 _UA_VERSION = "0.1"
 
 
@@ -28,12 +28,28 @@ class Config:
         alerts_sound: Whether to ring the terminal bell on an alert match.
         fuzzy_threshold: Similarity score (0-100) at or above which two
             headlines are treated as duplicates.
+        vim_keys: Whether vim-style navigation (j/k/g/G, ctrl-d/ctrl-u) is
+            enabled for the tape and source list.
+        watchlist: Tickers or company names the tape is filtered to (empty = all).
+        keyword: Term highlighted wherever it appears in the tape.
+        alerts: Tickers or keywords that trigger a notification.
+        enabled_sources: Names of the sources the user last had enabled. ``None``
+            means "never configured", in which case each source's ``default_on``
+            decides; an explicit (possibly empty) list overrides the defaults.
+        poll_scale: Multiplier on non-filing poll intervals; below 1 polls
+            faster. SEC filing feeds ignore it.
     """
 
     contact_email: str = ""
     theme: str = DEFAULT_THEME
     alerts_sound: bool = True
     fuzzy_threshold: float = 88.0
+    vim_keys: bool = False
+    poll_scale: float = 1.0
+    watchlist: list[str] = field(default_factory=list)
+    keyword: str = ""
+    alerts: list[str] = field(default_factory=list)
+    enabled_sources: list[str] | None = None
     key_bindings: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -74,6 +90,20 @@ def load_config() -> tuple[Config, str | None]:
         config.alerts_sound = data["alerts_sound"]
     if isinstance(data.get("fuzzy_threshold"), int | float):
         config.fuzzy_threshold = float(data["fuzzy_threshold"])
+    if isinstance(data.get("vim_keys"), bool):
+        config.vim_keys = data["vim_keys"]
+    if isinstance(data.get("poll_scale"), int | float):
+        config.poll_scale = float(data["poll_scale"])
+    if isinstance(data.get("watchlist"), list):
+        config.watchlist = [t for t in data["watchlist"] if isinstance(t, str)]
+    if isinstance(data.get("keyword"), str):
+        config.keyword = data["keyword"]
+    if isinstance(data.get("alerts"), list):
+        config.alerts = [t for t in data["alerts"] if isinstance(t, str)]
+    if isinstance(data.get("enabled_sources"), list):
+        config.enabled_sources = [
+            s for s in data["enabled_sources"] if isinstance(s, str)
+        ]
     if isinstance(data.get("key_bindings"), dict):
         config.key_bindings = {
             str(k): v for k, v in data["key_bindings"].items() if isinstance(v, str)
@@ -92,6 +122,11 @@ def save_config(config: Config) -> None:
     path.write_text(_render_toml(config))
 
 
+def _toml_str_array(values: list[str]) -> str:
+    """Render a list of strings as a single-line TOML array."""
+    return "[" + ", ".join(quote(v) for v in values) + "]"
+
+
 def _render_toml(config: Config) -> str:
     """Render settings as a TOML document."""
     lines = [
@@ -100,7 +135,14 @@ def _render_toml(config: Config) -> str:
         f"theme = {quote(config.theme)}",
         f"alerts_sound = {'true' if config.alerts_sound else 'false'}",
         f"fuzzy_threshold = {config.fuzzy_threshold}",
+        f"vim_keys = {'true' if config.vim_keys else 'false'}",
+        f"poll_scale = {config.poll_scale}",
+        f"keyword = {quote(config.keyword)}",
+        f"watchlist = {_toml_str_array(config.watchlist)}",
+        f"alerts = {_toml_str_array(config.alerts)}",
     ]
+    if config.enabled_sources is not None:
+        lines.append(f"enabled_sources = {_toml_str_array(config.enabled_sources)}")
     if config.key_bindings:
         lines.append("\n[key_bindings]")
         for k in sorted(config.key_bindings):
