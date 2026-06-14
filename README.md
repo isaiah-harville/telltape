@@ -1,11 +1,25 @@
-# telltape
+<div align="center">
 
-**Live, low-latency financial and world news headlines in your terminal — built for traders who react to news fast.**
+# 📼 telltape
 
-[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/isaiah-harville/telltape?label=release)](https://github.com/isaiah-harville/telltape/releases/latest)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
-[![CI](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml/badge.svg)](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml)
+**Live, low-latency financial & world-news headlines in your terminal —
+built for traders who react to news fast.**
+
+[![Latest release](https://img.shields.io/github/v/release/isaiah-harville/telltape?style=flat-square&color=2dba4e&label=release)](https://github.com/isaiah-harville/telltape/releases/latest)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue?style=flat-square)](LICENSE)
+
+### Build status
+
+[![CI](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/python.yml?branch=main&style=flat-square&logo=github&label=CI%20%C2%B7%20lint%20%2F%20type%20%2F%20test)](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml)
+
+[![Linux](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-linux.yml?style=flat-square&logo=linux&logoColor=white&label=Linux%20x86_64%20%2F%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-linux.yml)
+[![macOS](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-macos.yml?style=flat-square&logo=apple&logoColor=white&label=macOS%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-macos.yml)
+[![Windows](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-windows.yml?style=flat-square&logo=windows&logoColor=white&label=Windows%20x86_64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-windows.yml)
+
+</div>
+
+---
 
 telltape polls free financial wires, market-moving world news, and **SEC EDGAR
 real-time filings** concurrently, deduplicates the cross-posted noise, and
@@ -21,7 +35,7 @@ is, so you can see at a glance whether a story is seconds or hours old.
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+## ✨ Features
 
 - **One fast tape.** Financial wires (CNBC, MarketWatch, Yahoo Finance,
   Investing.com, Seeking Alpha, PR/GlobeNewswire), world news that moves markets
@@ -39,7 +53,7 @@ is, so you can see at a glance whether a story is seconds or hours old.
   keys, pick a theme, and edit the feed list directly.
 - **Open a source.** Double-click a headline to open the article in your browser.
 
-## Install
+## 📦 Install
 
 ### Prebuilt binaries
 
@@ -77,7 +91,7 @@ uv run telltape
 `uv run` creates the virtual environment, installs dependencies, and launches the
 app. Python 3.12+ is required (uv will fetch it if needed).
 
-## Usage
+## ⌨️ Usage
 
 On first launch you're asked for a **contact email** (see below); it's stored so
 you're only asked once. Then:
@@ -92,7 +106,7 @@ you're only asked once. Then:
 | `c` | Clear the tape |
 | `q` | Quit (with confirmation) |
 
-## Configuration
+## ⚙️ Configuration
 
 ### Contact email
 
@@ -138,20 +152,7 @@ Everything telltape stores lives in `~/.telltape`:
 If a config file exists but can't be parsed, telltape notifies you and falls back
 to defaults without overwriting your file.
 
-## How it works
-
-A pool of pollers fetches each feed on its own interval (conditional GET to avoid
-re-downloading unchanged feeds), normalizes entries into headlines, and pushes
-them through a deduplicator into the live tape. The UI is a [Textual](https://textual.textualize.io)
-app; everything network-bound runs off the render thread so the tape stays
-responsive. Released binaries are compiled with [Nuitka](https://nuitka.net).
-
-## Contributing
-
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
-project layout, and the checks to run before opening a PR.
-
-## License
+## 📄 License
 
 telltape is **source-available** under the [PolyForm Noncommercial 1.0.0](LICENSE)
 license: you may use, modify, and share it for **noncommercial** purposes.
