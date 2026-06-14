@@ -1,9 +1,9 @@
 name: release-linux
 
-# Tags only - never runs on branch pushes.
+# Runs when a GitHub Release is published; uploads its assets to that release.
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: write

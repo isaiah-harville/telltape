@@ -12,9 +12,9 @@ built for traders who react to news fast.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/python.yml?branch=main&style=flat-square&logo=github&label=CI%20%C2%B7%20lint%20%2F%20type%20%2F%20test)](https://github.com/isaiah-harville/telltape/actions/workflows/python.yml)
 
-[![Linux](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-linux.yml?style=flat-square&logo=linux&logoColor=white&label=Linux%20x86_64%20%2F%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-linux.yml)
-[![macOS](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-macos.yml?style=flat-square&logo=apple&logoColor=white&label=macOS%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-macos.yml)
-[![Windows](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-windows.yml?style=flat-square&logo=windows&logoColor=white&label=Windows%20x86_64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-windows.yml)
+[![Linux](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-linux.yml?event=release&style=flat-square&logo=linux&logoColor=white&label=Linux%20x86_64%20%2F%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-linux.yml)
+[![macOS](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-macos.yml?event=release&style=flat-square&logo=apple&logoColor=white&label=macOS%20arm64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-macos.yml)
+[![Windows](https://img.shields.io/github/actions/workflow/status/isaiah-harville/telltape/release-windows.yml?event=release&style=flat-square&logo=windows&logoColor=white&label=Windows%20x86_64)](https://github.com/isaiah-harville/telltape/actions/workflows/release-windows.yml)
 
 </div>
 
