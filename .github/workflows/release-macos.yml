@@ -106,13 +106,24 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$kc_pw" "$kc"
           rm -f cert.p12
 
+          # Resolve the signing identity by its SHA-1 hash rather than by name:
+          # codesign's name lookup is brittle ("no identity found" even when the
+          # cert is imported). Fall back to SIGN_IDENTITY only if none is found.
+          security find-identity -v -p codesigning "$kc"
+          identity="$(security find-identity -v -p codesigning "$kc" \
+            | awk 'match($0, /[0-9A-F]{40}/) { print substr($0, RSTART, RLENGTH); exit }')"
+          if [ -z "$identity" ]; then
+            echo "::warning::No valid codesigning identity in keychain; falling back to SIGN_IDENTITY"
+            identity="$SIGN_IDENTITY"
+          fi
+
           sign() {
             codesign --force --options runtime --timestamp \
               --entitlements packaging/macos/entitlements.plist \
-              --sign "$SIGN_IDENTITY" "$1"
+              --sign "$identity" "$1"
           }
           sign dist/telltape.app/Contents/Resources/telltape
-          codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" dist/telltape.app
+          codesign --force --options runtime --timestamp --sign "$identity" dist/telltape.app
           sign out/telltape-macos-arm64
 
           echo "$NOTARY_KEY" | base64 --decode > notary.p8
@@ -126,6 +137,7 @@ jobs:
           ditto -c -k out/telltape-macos-arm64 bin-notarize.zip
           notarize bin-notarize.zip
 
+          echo "identity=$identity" >> "$GITHUB_OUTPUT"
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Build DMG installer
@@ -153,7 +165,7 @@ jobs:
         run: |
           set -euo pipefail
           dmg=out/telltape-macos-arm64.dmg
-          codesign --force --timestamp --sign "$SIGN_IDENTITY" "$dmg"
+          codesign --force --timestamp --sign "${{ steps.signmac.outputs.identity }}" "$dmg"
           xcrun notarytool submit "$dmg" --key notary.p8 \
             --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
           xcrun stapler staple "$dmg"
