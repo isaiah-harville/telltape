@@ -6,7 +6,6 @@
 built for traders who react to news fast.**
 
 [![Latest release](https://img.shields.io/github/v/release/isaiah-harville/telltape?style=flat-square&color=2dba4e&label=release)](https://github.com/isaiah-harville/telltape/releases/latest)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue?style=flat-square)](LICENSE)
 
 ### Build status
